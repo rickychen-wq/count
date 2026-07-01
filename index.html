@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="旅費帳">
+<meta name="theme-color" content="#0B0D10">
 <title>旅費帳</title>
 <style>
   * { box-sizing: border-box; }
@@ -26,15 +30,19 @@
 
   .page-container { width: 100%; max-width: 480px; margin: 0 auto; padding: 26px 22px calc(120px + env(safe-area-inset-bottom,0px)); overflow-x: hidden; }
 
+  .loading-wrap { min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
   .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
   .header-left { display: flex; align-items: center; gap: 10px; }
-  .logo-box { width: 34px; height: 34px; border-radius: 9px; background: #D4AF37; display: flex; align-items: center; justify-content: center; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .logo-box { width: 34px; height: 34px; border-radius: 9px; background: #D4AF37; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .header-title { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
 
   .icon-btn, .icon-btn-sm { border: 1px solid #2A2E33; background: #14171C; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .12s ease, background-color .15s ease, border-color .15s ease; }
-  .icon-btn { width: 36px; height: 36px; border-radius: 10px; }
+  .icon-btn { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; }
   .icon-btn-sm { width: 32px; height: 32px; border-radius: 8px; background: transparent; }
-  .icon-btn:active, .icon-btn-sm:active, .press:active { transform: scale(0.96); }
+  .name-chip { height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #2A2E33; background: #14171C; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: 700; color: #D4AF37; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: transform .12s ease, background-color .15s ease, border-color .15s ease; }
+  .icon-btn:active, .icon-btn-sm:active, .name-chip:active, .press:active { transform: scale(0.96); }
 
   .error-banner { display: flex; align-items: center; gap: 8px; background: #2A1416; border: 1px solid #4A2226; border-radius: 10px; padding: 10px 12px; font-size: 14px; color: #E5989D; margin-bottom: 14px; }
 
@@ -150,6 +158,9 @@
 </head>
 <body>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
 <div id="toast" class="toast hidden"></div>
 <div id="app" class="page-container"></div>
 <button id="fab" class="fab hidden" data-action="open-add-expense" aria-label="新增支出"></button>
@@ -158,7 +169,22 @@
 <script>
 'use strict';
 
-var STORAGE_KEY = 'travel-ledger-data';
+/* =====================================================================
+   把下面這個 firebaseConfig 換成你自己 Firebase 專案的設定。
+   拿法：console.firebase.google.com → 建立專案 → 左上角齒輪 → 專案設定
+   → 往下滑「你的應用程式」→ 新增網頁應用程式 → 會給你一段長這樣的物件，
+   整個貼過來蓋掉下面這幾行就好。
+   ===================================================================== */
+var firebaseConfig = {
+  apiKey: "AIzaSyBcESksWECsl_451PT6BYdXnd4EjnPrcog",
+  authDomain: "cost-e8cde.firebaseapp.com",
+  projectId: "cost-e8cde",
+  storageBucket: "cost-e8cde.firebasestorage.app",
+  messagingSenderId: "415066476940",
+  appId: "1:415066476940:web:3a134bed0a758a352cc6a9"
+};
+
+var USERNAME_KEY = 'travel-ledger-username';
 
 var CATEGORIES = [
   { id: 'food', label: '飲食', icon: 'utensils', color: '#D4AF37' },
@@ -176,6 +202,20 @@ var CURRENCIES = [
 ];
 
 var WEEKDAYS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+
+/* ---------- Firebase init (safe: never throws, falls back to a clear message) ---------- */
+var firebaseReady = false;
+var db = null;
+try {
+  if (typeof firebase !== 'undefined' && firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('YOUR_') !== 0) {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    try { db.enablePersistence({ synchronizeTabs: true }); } catch (e2) {}
+    firebaseReady = true;
+  }
+} catch (e) {
+  firebaseReady = false;
+}
 
 /* ---------- icon markup (plain SVG strings, no library needed) ---------- */
 function icon(name, size, color) {
@@ -215,9 +255,6 @@ function escapeHtml(str) {
 function todayLocal() {
   var d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 function findCategory(id) {
   for (var i = 0; i < CATEGORIES.length; i++) { if (CATEGORIES[i].id === id) return CATEGORIES[i]; }
@@ -268,25 +305,11 @@ function getRangeForPreset(preset) {
   }
   return { from: '', to: '' };
 }
-function defaultData() {
-  return { trips: [{ id: uid(), name: '宜蘭兩日遊', currency: 'TWD', budget: 0, exchangeRate: 0, createdAt: Date.now() }], expenses: [] };
+function getUserName() {
+  try { return localStorage.getItem(USERNAME_KEY) || ''; } catch (e) { return ''; }
 }
-
-/* ---------- persistence (synchronous localStorage, no async needed) ---------- */
-function loadData() {
-  try {
-    var raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {}
-  return defaultData();
-}
-function saveData() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-    saveErrorFlag = false;
-  } catch (e) {
-    saveErrorFlag = true;
-  }
+function setUserNameStored(name) {
+  try { localStorage.setItem(USERNAME_KEY, name); } catch (e) {}
 }
 
 /* ---------- global state ---------- */
@@ -296,21 +319,62 @@ var confirmDeleteExpenseId = null;
 var confirmDeleteTripFlag = false;
 var saveErrorFlag = false;
 var modalOpen = null;
+var nameGateActive = false;
 var currentExpenseCategory = 'food';
 var editingTripId = null;
 var currentNewTripCurrency = 'TWD';
 var searchState = { query: '', preset: 'all', dateFrom: '', dateTo: '', scope: 'current', categories: {} };
+var unsubTrips = null;
+var unsubExpenses = null;
 
 function getActiveTrip() {
+  if (!appData) return null;
   for (var i = 0; i < appData.trips.length; i++) { if (appData.trips[i].id === activeTripId) return appData.trips[i]; }
   return appData.trips[0];
+}
+
+/* ---------- Firestore sync ---------- */
+function startSync() {
+  if (!firebaseReady) {
+    var root = document.getElementById('app');
+    root.innerHTML = '<div class="loading-wrap">' + icon('alert', 32, '#E5484D') +
+      '<div style="margin-top:14px;color:#F5F1E8;font-size:16px;font-weight:700;">還沒接上 Firebase</div>' +
+      '<div style="margin-top:8px;color:#9AA0A6;font-size:14px;max-width:280px;">請把檔案最上面的 firebaseConfig 換成你自己 Firebase 專案的設定</div></div>';
+    document.getElementById('fab').classList.add('hidden');
+    return;
+  }
+  appData = { trips: [], expenses: [] };
+  var tripsLoaded = false, bootstrapped = false;
+
+  unsubTrips = db.collection('trips').orderBy('createdAt').onSnapshot(function (snap) {
+    appData.trips = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+    tripsLoaded = true;
+    if (!activeTripId || !appData.trips.some(function (t) { return t.id === activeTripId; })) {
+      activeTripId = appData.trips.length ? appData.trips[0].id : null;
+    }
+    saveErrorFlag = false;
+    renderApp();
+    if (tripsLoaded && !bootstrapped && appData.trips.length === 0) {
+      bootstrapped = true;
+      db.collection('trips').add({ name: '宜蘭兩日遊', currency: 'TWD', budget: 0, exchangeRate: 0, createdAt: Date.now() });
+    }
+  }, function () { saveErrorFlag = true; renderApp(); });
+
+  unsubExpenses = db.collection('expenses').onSnapshot(function (snap) {
+    appData.expenses = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+    renderApp();
+  }, function () { saveErrorFlag = true; renderApp(); });
 }
 
 /* ---------- main render ---------- */
 function renderApp() {
   var root = document.getElementById('app');
   var fab = document.getElementById('fab');
-  if (!appData.trips.length) { root.innerHTML = ''; fab.classList.add('hidden'); return; }
+  if (!appData || !appData.trips.length) {
+    root.innerHTML = '<div class="loading-wrap">' + icon('wallet', 32, '#D4AF37') + '<div style="margin-top:12px;color:#9AA0A6;font-size:16px;">載入中...</div></div>';
+    fab.classList.add('hidden');
+    return;
+  }
   var activeTrip = getActiveTrip();
   activeTripId = activeTrip.id;
   fab.classList.remove('hidden');
@@ -337,10 +401,13 @@ function renderApp() {
 
   var html = '';
   html += '<div class="header"><div class="header-left"><div class="logo-box">' + icon('wallet', 20, '#0B0D10') + '</div><span class="header-title">旅費帳</span></div>';
-  html += '<button class="icon-btn" data-action="open-search" aria-label="搜尋">' + icon('search', 18, '#D4AF37') + '</button></div>';
+  html += '<div class="header-right">';
+  html += '<button class="name-chip" data-action="open-username" aria-label="修改名字">' + escapeHtml(getUserName() || '設定名字') + '</button>';
+  html += '<button class="icon-btn" data-action="open-search" aria-label="搜尋">' + icon('search', 18, '#D4AF37') + '</button>';
+  html += '</div></div>';
 
   if (saveErrorFlag) {
-    html += '<div class="error-banner">' + icon('alert', 16, '#E5484D') + '<span>尚未同步儲存，請檢查瀏覽器儲存空間</span></div>';
+    html += '<div class="error-banner">' + icon('alert', 16, '#E5484D') + '<span>尚未同步，請檢查網路連線</span></div>';
   }
 
   html += '<div class="tabs-row">';
@@ -427,6 +494,7 @@ function renderExpenseRow(e, currency, opts) {
   }
   var subParts = [];
   if (opts.tripName) subParts.push(escapeHtml(opts.tripName));
+  if (e.addedBy) subParts.push(escapeHtml(e.addedBy));
   if (e.note) subParts.push(cat.label);
   var subText = subParts.join(' · ');
   var html = '<div class="expense-row"><div class="category-icon-box" style="background-color:' + cat.color + '22">' + icon(cat.icon, 18, cat.color) + '</div>';
@@ -477,10 +545,11 @@ function doSaveExpense() {
   var note = document.getElementById('expenseNoteInput').value.trim();
   var date = document.getElementById('expenseDateInput').value || todayLocal();
   var activeTrip = getActiveTrip();
-  appData.expenses.push({ id: uid(), tripId: activeTrip.id, amount: amt, category: currentExpenseCategory, note: note, date: date, createdAt: Date.now() });
-  saveData();
   closeModal();
-  renderApp();
+  db.collection('expenses').add({
+    tripId: activeTrip.id, amount: amt, category: currentExpenseCategory, note: note, date: date,
+    createdAt: Date.now(), addedBy: getUserName()
+  }).catch(function () { saveErrorFlag = true; renderApp(); });
 }
 
 /* ---------- trip modal (add / edit) ---------- */
@@ -531,34 +600,62 @@ function doSaveTrip() {
   var budget = parseFloat(document.getElementById('tripBudgetInput').value) || 0;
   var rateInput = document.getElementById('tripExchangeInput');
   var rate = rateInput ? (parseFloat(rateInput.value) || 0) : 0;
-  if (editingTripId) {
-    var t = appData.trips.filter(function (x) { return x.id === editingTripId; })[0];
-    t.name = name; t.budget = budget; t.exchangeRate = rate;
-  } else {
-    var trip = { id: uid(), name: name, currency: currentNewTripCurrency, budget: budget, exchangeRate: rate, createdAt: Date.now() };
-    appData.trips.push(trip);
-    activeTripId = trip.id;
-  }
-  saveData();
   closeModal();
-  renderApp();
+  if (editingTripId) {
+    db.collection('trips').doc(editingTripId).update({ name: name, budget: budget, exchangeRate: rate })
+      .catch(function () { saveErrorFlag = true; renderApp(); });
+  } else {
+    db.collection('trips').add({ name: name, currency: currentNewTripCurrency, budget: budget, exchangeRate: rate, createdAt: Date.now() })
+      .then(function (ref) { activeTripId = ref.id; renderApp(); })
+      .catch(function () { saveErrorFlag = true; renderApp(); });
+  }
 }
 function doDeleteTrip() {
   if (appData.trips.length <= 1) return;
   var activeTrip = getActiveTrip();
-  appData.trips = appData.trips.filter(function (t) { return t.id !== activeTrip.id; });
-  appData.expenses = appData.expenses.filter(function (e) { return e.tripId !== activeTrip.id; });
-  activeTripId = appData.trips.length ? appData.trips[0].id : null;
+  var batch = db.batch();
+  batch.delete(db.collection('trips').doc(activeTrip.id));
+  appData.expenses.filter(function (e) { return e.tripId === activeTrip.id; }).forEach(function (e) {
+    batch.delete(db.collection('expenses').doc(e.id));
+  });
   confirmDeleteTripFlag = false;
-  saveData();
-  renderApp();
+  batch.commit().catch(function () { saveErrorFlag = true; renderApp(); });
 }
 function doDeleteExpense(id) {
-  appData.expenses = appData.expenses.filter(function (e) { return e.id !== id; });
   confirmDeleteExpenseId = null;
-  saveData();
-  renderApp();
-  if (modalOpen === 'search') renderSearchResults();
+  db.collection('expenses').doc(id).delete().catch(function () { saveErrorFlag = true; renderApp(); });
+  if (modalOpen === 'search') renderSearchResults(); else renderApp();
+}
+
+/* ---------- username (device identity) ---------- */
+function openUsernameModal(mandatory) {
+  nameGateActive = !!mandatory;
+  var current = getUserName();
+  var html = '<div class="modal-overlay"><div class="modal-sheet">';
+  html += '<div class="modal-header"><span class="modal-title">' + (mandatory ? '歡迎使用旅費帳' : '修改名字') + '</span>';
+  if (!mandatory) html += '<button class="modal-close" data-action="close-modal">' + icon('x', 20, '#9AA0A6') + '</button>';
+  html += '</div>';
+  html += '<div class="form-label">你的名字（家人會看到是誰記的帳）</div>';
+  html += '<input type="text" id="userNameInput" class="text-input" placeholder="例如：chen" value="' + escapeHtml(current) + '">';
+  html += '<button class="save-btn" id="userNameSaveBtn" data-action="save-username"' + (current ? '' : ' disabled') + '>' + (mandatory ? '開始使用' : '儲存') + '</button>';
+  html += '</div></div>';
+  document.getElementById('modalRoot').innerHTML = html;
+  modalOpen = 'username';
+  var input = document.getElementById('userNameInput');
+  input.addEventListener('input', function () {
+    document.getElementById('userNameSaveBtn').disabled = !this.value.trim();
+  });
+  input.focus();
+}
+function doSaveUsername() {
+  var input = document.getElementById('userNameInput');
+  var name = input.value.trim();
+  if (!name) return;
+  var wasGate = nameGateActive;
+  setUserNameStored(name);
+  nameGateActive = false;
+  closeModal();
+  if (wasGate) startSync(); else renderApp();
 }
 
 /* ---------- search modal ---------- */
@@ -755,6 +852,10 @@ function handleGlobalClick(ev) {
     doDeleteExpense(el.getAttribute('data-expense-id'));
   } else if (action === 'open-add-expense') {
     openExpenseModal();
+  } else if (action === 'open-username') {
+    openUsernameModal(false);
+  } else if (action === 'save-username') {
+    doSaveUsername();
   } else if (action === 'close-modal') {
     closeModal();
   } else if (action === 'pick-expense-category') {
@@ -801,13 +902,17 @@ function handleGlobalClick(ev) {
 
 /* ---------- init ---------- */
 function init() {
-  appData = loadData();
-  activeTripId = appData.trips.length ? appData.trips[0].id : null;
-  renderApp();
   document.addEventListener('click', handleGlobalClick);
   document.getElementById('modalRoot').addEventListener('click', function (ev) {
+    if (nameGateActive) return;
     if (ev.target.classList.contains('modal-overlay')) closeModal();
   });
+  renderApp();
+  if (!getUserName()) {
+    openUsernameModal(true);
+  } else {
+    startSync();
+  }
 }
 
 if (document.readyState === 'loading') {
