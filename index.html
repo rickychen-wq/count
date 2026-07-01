@@ -1,0 +1,644 @@
+import { useState, useEffect, useCallback } from "react";
+import {
+  Plus, X, Trash2, Wallet, Utensils, Car, BedDouble,
+  ShoppingBag, Ticket, MoreHorizontal, Calendar, AlertCircle
+} from "lucide-react";
+
+const STORAGE_KEY = "travel-ledger-data";
+
+const CATEGORIES = [
+  { id: "food", label: "飲食", icon: Utensils, color: "#D4AF37" },
+  { id: "transport", label: "交通", icon: Car, color: "#4FD1C5" },
+  { id: "stay", label: "住宿", icon: BedDouble, color: "#9B7EDE" },
+  { id: "shopping", label: "購物", icon: ShoppingBag, color: "#E08585" },
+  { id: "fun", label: "娛樂", icon: Ticket, color: "#6FCF97" },
+  { id: "other", label: "其他", icon: MoreHorizontal, color: "#8A8F98" },
+];
+
+const CURRENCIES = [
+  { code: "TWD", symbol: "NT$", label: "台幣" },
+  { code: "JPY", symbol: "¥", label: "日圓" },
+  { code: "USD", symbol: "$", label: "美金" },
+];
+
+const WEEKDAYS = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+
+function todayLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function formatMoney(amount, code) {
+  const n = Number(amount) || 0;
+  const symbol = CURRENCIES.find((c) => c.code === code)?.symbol || "";
+  const decimals = code === "USD" ? 2 : 0;
+  const formatted = n.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  return `${symbol}${formatted}`;
+}
+
+function formatDateLabel(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${m}/${d} ${WEEKDAYS[dt.getDay()]}`;
+}
+
+const defaultData = () => ({
+  trips: [{ id: uid(), name: "宜蘭兩日遊", currency: "TWD", createdAt: Date.now() }],
+  expenses: [],
+});
+
+export default function ExpenseTracker() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saveError, setSaveError] = useState(false);
+  const [activeTripId, setActiveTripId] = useState(null);
+
+  const [showAddTrip, setShowAddTrip] = useState(false);
+  const [newTripName, setNewTripName] = useState("");
+  const [newTripCurrency, setNewTripCurrency] = useState("TWD");
+
+  const [showAddExpense, setShowAddExpense] = useState(false);
+  const [formAmount, setFormAmount] = useState("");
+  const [formCategory, setFormCategory] = useState("food");
+  const [formNote, setFormNote] = useState("");
+  const [formDate, setFormDate] = useState(todayLocal());
+
+  const [confirmDeleteExpense, setConfirmDeleteExpense] = useState(null);
+  const [confirmDeleteTrip, setConfirmDeleteTrip] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await window.storage.get(STORAGE_KEY);
+        const parsed = res ? JSON.parse(res.value) : defaultData();
+        setData(parsed);
+        setActiveTripId(parsed.trips[0]?.id || null);
+      } catch (e) {
+        const fresh = defaultData();
+        setData(fresh);
+        setActiveTripId(fresh.trips[0]?.id || null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    setConfirmDeleteTrip(false);
+    setConfirmDeleteExpense(null);
+  }, [activeTripId]);
+
+  const persist = useCallback(async (next) => {
+    try {
+      await window.storage.set(STORAGE_KEY, JSON.stringify(next));
+      setSaveError(false);
+    } catch (e) {
+      setSaveError(true);
+    }
+  }, []);
+
+  const updateData = (updater) => {
+    setData((prev) => {
+      const next = updater(prev);
+      persist(next);
+      return next;
+    });
+  };
+
+  if (loading || !data) {
+    return (
+      <div style={styles.loadingWrap}>
+        <Wallet size={32} color="#D4AF37" />
+        <div style={{ marginTop: 12, color: "#9AA0A6", fontSize: 16 }}>載入中...</div>
+      </div>
+    );
+  }
+
+  const activeTrip = data.trips.find((t) => t.id === activeTripId) || data.trips[0];
+  const tripExpenses = data.expenses.filter((e) => e.tripId === activeTrip?.id);
+  const total = tripExpenses.reduce((s, e) => s + Number(e.amount), 0);
+
+  const categoryTotals = CATEGORIES.map((c) => ({
+    ...c,
+    total: tripExpenses.filter((e) => e.category === c.id).reduce((s, e) => s + Number(e.amount), 0),
+  }))
+    .filter((c) => c.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  const groupsMap = {};
+  tripExpenses.forEach((e) => {
+    if (!groupsMap[e.date]) groupsMap[e.date] = [];
+    groupsMap[e.date].push(e);
+  });
+  const dateKeys = Object.keys(groupsMap).sort((a, b) => (a < b ? 1 : -1));
+  dateKeys.forEach((k) => groupsMap[k].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
+
+  function addTrip() {
+    const name = newTripName.trim();
+    if (!name) return;
+    const trip = { id: uid(), name, currency: newTripCurrency, createdAt: Date.now() };
+    updateData((prev) => ({ ...prev, trips: [...prev.trips, trip] }));
+    setActiveTripId(trip.id);
+    setNewTripName("");
+    setNewTripCurrency("TWD");
+    setShowAddTrip(false);
+  }
+
+  function deleteTrip() {
+    if (data.trips.length <= 1) return;
+    const remaining = data.trips.filter((t) => t.id !== activeTrip.id);
+    updateData((prev) => ({
+      trips: remaining,
+      expenses: prev.expenses.filter((e) => e.tripId !== activeTrip.id),
+    }));
+    setActiveTripId(remaining[0]?.id || null);
+    setConfirmDeleteTrip(false);
+  }
+
+  function addExpense() {
+    const amt = parseFloat(formAmount);
+    if (!amt || amt <= 0 || !activeTrip) return;
+    const expense = {
+      id: uid(),
+      tripId: activeTrip.id,
+      amount: amt,
+      category: formCategory,
+      note: formNote.trim(),
+      date: formDate,
+      createdAt: Date.now(),
+    };
+    updateData((prev) => ({ ...prev, expenses: [...prev.expenses, expense] }));
+    setFormAmount("");
+    setFormNote("");
+    setFormCategory("food");
+    setFormDate(todayLocal());
+    setShowAddExpense(false);
+  }
+
+  function deleteExpense(id) {
+    updateData((prev) => ({ ...prev, expenses: prev.expenses.filter((e) => e.id !== id) }));
+    setConfirmDeleteExpense(null);
+  }
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <div style={styles.headerLeft}>
+            <div style={styles.logoBox}>
+              <Wallet size={20} color="#0B0D10" />
+            </div>
+            <span style={styles.headerTitle}>旅費帳</span>
+          </div>
+        </div>
+
+        {saveError && (
+          <div style={styles.errorBanner}>
+            <AlertCircle size={16} color="#E5484D" />
+            <span>尚未同步儲存，請檢查網路</span>
+          </div>
+        )}
+
+        <div style={styles.tabsRow}>
+          {data.trips.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTripId(t.id)}
+              style={{
+                ...styles.tripTag,
+                ...(t.id === activeTrip?.id ? styles.tripTagActive : {}),
+              }}
+            >
+              <span style={styles.tripTagHole} />
+              <span style={styles.tripTagName}>{t.name}</span>
+              <span style={styles.tripTagCurrency}>{t.currency}</span>
+            </button>
+          ))}
+          <button style={styles.addTripBtn} onClick={() => setShowAddTrip(true)}>
+            <Plus size={18} color="#D4AF37" />
+          </button>
+        </div>
+
+        {activeTrip && (
+          <>
+            <div style={styles.summaryCard}>
+              <div style={styles.summaryTop}>
+                <div>
+                  <div style={styles.summaryLabel}>{activeTrip.name} 總支出</div>
+                  <div style={styles.summaryTotal}>{formatMoney(total, activeTrip.currency)}</div>
+                  <div style={styles.summarySub}>{tripExpenses.length} 筆紀錄</div>
+                </div>
+                <button
+                  style={styles.tripDeleteBtn}
+                  onClick={() => setConfirmDeleteTrip(true)}
+                  aria-label="刪除行程"
+                >
+                  <Trash2 size={16} color="#6B7076" />
+                </button>
+              </div>
+
+              {confirmDeleteTrip && (
+                <div style={styles.confirmRow}>
+                  <span style={styles.confirmText}>
+                    {data.trips.length <= 1 ? "至少要保留一個行程" : `確定刪除「${activeTrip.name}」及其所有紀錄?`}
+                  </span>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {data.trips.length > 1 && (
+                      <button style={styles.confirmDangerBtn} onClick={deleteTrip}>刪除</button>
+                    )}
+                    <button style={styles.confirmCancelBtn} onClick={() => setConfirmDeleteTrip(false)}>取消</button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {categoryTotals.length > 0 && (
+              <div style={styles.card}>
+                <div style={styles.cardTitle}>分類統計</div>
+                {categoryTotals.map((c) => {
+                  const Icon = c.icon;
+                  const pct = total > 0 ? Math.round((c.total / total) * 100) : 0;
+                  return (
+                    <div key={c.id} style={styles.categoryRow}>
+                      <div style={{ ...styles.categoryIconBox, backgroundColor: c.color + "22" }}>
+                        <Icon size={16} color={c.color} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={styles.categoryRowTop}>
+                          <span style={styles.categoryName}>{c.label}</span>
+                          <span style={styles.categoryAmount}>{formatMoney(c.total, activeTrip.currency)}</span>
+                        </div>
+                        <div style={styles.barTrack}>
+                          <div style={{ ...styles.barFill, width: `${pct}%`, backgroundColor: c.color }} />
+                        </div>
+                      </div>
+                      <span style={styles.categoryPct}>{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div style={styles.listSection}>
+              <div style={styles.cardTitle}>支出紀錄</div>
+              {dateKeys.length === 0 && (
+                <div style={styles.emptyState}>
+                  <Calendar size={28} color="#4A4F55" />
+                  <div style={styles.emptyText}>還沒有支出紀錄</div>
+                  <div style={styles.emptySub}>點右下角「＋」開始記帳</div>
+                </div>
+              )}
+              {dateKeys.map((dateKey) => {
+                const dayExpenses = groupsMap[dateKey];
+                const daySum = dayExpenses.reduce((s, e) => s + Number(e.amount), 0);
+                return (
+                  <div key={dateKey} style={{ marginBottom: 16 }}>
+                    <div style={styles.dateHeader}>
+                      <span>{formatDateLabel(dateKey)}</span>
+                      <span style={styles.dateHeaderSum}>{formatMoney(daySum, activeTrip.currency)}</span>
+                    </div>
+                    {dayExpenses.map((e) => {
+                      const cat = CATEGORIES.find((c) => c.id === e.category) || CATEGORIES[5];
+                      const Icon = cat.icon;
+                      const isConfirming = confirmDeleteExpense === e.id;
+                      return (
+                        <div key={e.id} style={styles.expenseRow}>
+                          {isConfirming ? (
+                            <div style={styles.rowConfirmWrap}>
+                              <span style={styles.confirmText}>刪除這筆紀錄?</span>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button style={styles.confirmDangerBtn} onClick={() => deleteExpense(e.id)}>刪除</button>
+                                <button style={styles.confirmCancelBtn} onClick={() => setConfirmDeleteExpense(null)}>取消</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div style={{ ...styles.categoryIconBox, backgroundColor: cat.color + "22" }}>
+                                <Icon size={18} color={cat.color} />
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={styles.expenseNote}>{e.note || cat.label}</div>
+                                {e.note && <div style={styles.expenseCatLabel}>{cat.label}</div>}
+                              </div>
+                              <div style={styles.expenseAmount}>{formatMoney(e.amount, activeTrip.currency)}</div>
+                              <button
+                                style={styles.rowDeleteBtn}
+                                onClick={() => setConfirmDeleteExpense(e.id)}
+                                aria-label="刪除"
+                              >
+                                <Trash2 size={15} color="#6B7076" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+
+      {activeTrip && (
+        <button style={styles.fab} onClick={() => setShowAddExpense(true)} aria-label="新增支出">
+          <Plus size={26} color="#0B0D10" />
+        </button>
+      )}
+
+      {showAddExpense && (
+        <div style={styles.modalOverlay} onClick={() => setShowAddExpense(false)}>
+          <div style={styles.modalSheet} onClick={(ev) => ev.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <span style={styles.modalTitle}>新增支出</span>
+              <button style={styles.modalClose} onClick={() => setShowAddExpense(false)}>
+                <X size={20} color="#9AA0A6" />
+              </button>
+            </div>
+
+            <div style={styles.amountInputWrap}>
+              <span style={styles.amountSymbol}>
+                {CURRENCIES.find((c) => c.code === activeTrip.currency)?.symbol}
+              </span>
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="0"
+                value={formAmount}
+                onChange={(ev) => setFormAmount(ev.target.value)}
+                style={styles.amountInput}
+                autoFocus
+              />
+            </div>
+
+            <div style={styles.formLabel}>分類</div>
+            <div style={styles.categoryGrid}>
+              {CATEGORIES.map((c) => {
+                const Icon = c.icon;
+                const active = formCategory === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setFormCategory(c.id)}
+                    style={{
+                      ...styles.categoryPick,
+                      borderColor: active ? c.color : "#2A2E33",
+                      backgroundColor: active ? c.color + "1A" : "#181B1F",
+                    }}
+                  >
+                    <Icon size={20} color={active ? c.color : "#9AA0A6"} />
+                    <span style={{ ...styles.categoryPickLabel, color: active ? "#F5F1E8" : "#9AA0A6" }}>
+                      {c.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={styles.formLabel}>備註（選填）</div>
+            <input
+              type="text"
+              placeholder="例如：午餐、伴手禮..."
+              value={formNote}
+              onChange={(ev) => setFormNote(ev.target.value)}
+              style={styles.textInput}
+            />
+
+            <div style={styles.formLabel}>日期</div>
+            <input
+              type="date"
+              value={formDate}
+              onChange={(ev) => setFormDate(ev.target.value)}
+              style={styles.textInput}
+            />
+
+            <button
+              style={{ ...styles.saveBtn, opacity: parseFloat(formAmount) > 0 ? 1 : 0.4 }}
+              onClick={addExpense}
+              disabled={!(parseFloat(formAmount) > 0)}
+            >
+              儲存
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showAddTrip && (
+        <div style={styles.modalOverlay} onClick={() => setShowAddTrip(false)}>
+          <div style={styles.modalSheet} onClick={(ev) => ev.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <span style={styles.modalTitle}>新增行程</span>
+              <button style={styles.modalClose} onClick={() => setShowAddTrip(false)}>
+                <X size={20} color="#9AA0A6" />
+              </button>
+            </div>
+
+            <div style={styles.formLabel}>行程名稱</div>
+            <input
+              type="text"
+              placeholder="例如：日本七日遊"
+              value={newTripName}
+              onChange={(ev) => setNewTripName(ev.target.value)}
+              style={styles.textInput}
+              autoFocus
+            />
+
+            <div style={styles.formLabel}>幣別</div>
+            <div style={styles.currencyRow}>
+              {CURRENCIES.map((c) => {
+                const active = newTripCurrency === c.code;
+                return (
+                  <button
+                    key={c.code}
+                    onClick={() => setNewTripCurrency(c.code)}
+                    style={{
+                      ...styles.currencyPick,
+                      borderColor: active ? "#D4AF37" : "#2A2E33",
+                      backgroundColor: active ? "#D4AF3722" : "#181B1F",
+                      color: active ? "#F5F1E8" : "#9AA0A6",
+                    }}
+                  >
+                    {c.symbol} {c.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              style={{ ...styles.saveBtn, opacity: newTripName.trim() ? 1 : 0.4 }}
+              onClick={addTrip}
+              disabled={!newTripName.trim()}
+            >
+              建立行程
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    backgroundColor: "#0B0D10",
+    fontFamily: '"PingFang TC","Noto Sans TC",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif',
+    color: "#F5F1E8",
+    paddingBottom: 100,
+  },
+  loadingWrap: {
+    minHeight: "100vh",
+    backgroundColor: "#0B0D10",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  container: { maxWidth: 480, margin: "0 auto", padding: "20px 16px" },
+  header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
+  headerLeft: { display: "flex", alignItems: "center", gap: 10 },
+  logoBox: {
+    width: 34, height: 34, borderRadius: 9, backgroundColor: "#D4AF37",
+    display: "flex", alignItems: "center", justifyContent: "center",
+  },
+  headerTitle: { fontSize: 22, fontWeight: 700, letterSpacing: 0.5 },
+  errorBanner: {
+    display: "flex", alignItems: "center", gap: 8, backgroundColor: "#2A1416",
+    border: "1px solid #4A2226", borderRadius: 10, padding: "10px 12px",
+    fontSize: 14, color: "#E5989D", marginBottom: 14,
+  },
+  tabsRow: { display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6, marginBottom: 18 },
+  tripTag: {
+    position: "relative", display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
+    padding: "10px 16px 10px 22px", borderRadius: 10, border: "1px solid #2A2E33",
+    backgroundColor: "#14171C", cursor: "pointer", fontFamily: "inherit",
+  },
+  tripTagActive: { border: "1px solid #D4AF37", backgroundColor: "#1C1710" },
+  tripTagHole: {
+    position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)",
+    width: 6, height: 6, borderRadius: "50%", backgroundColor: "#0B0D10", border: "1px solid #3A3F45",
+  },
+  tripTagName: { fontSize: 15, fontWeight: 600, whiteSpace: "nowrap" },
+  tripTagCurrency: {
+    fontSize: 12, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace', color: "#9AA0A6",
+    backgroundColor: "#0B0D10", padding: "2px 6px", borderRadius: 5,
+  },
+  addTripBtn: {
+    flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: "1px dashed #3A3F45",
+    backgroundColor: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+  },
+  summaryCard: { backgroundColor: "#14171C", border: "1px solid #22262B", borderRadius: 16, padding: 20, marginBottom: 16 },
+  summaryTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
+  summaryLabel: { fontSize: 14, color: "#9AA0A6", marginBottom: 6 },
+  summaryTotal: {
+    fontSize: 40, fontWeight: 700, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace',
+    color: "#D4AF37", lineHeight: 1.1,
+  },
+  summarySub: { fontSize: 14, color: "#6B7076", marginTop: 6 },
+  tripDeleteBtn: {
+    width: 32, height: 32, borderRadius: 8, border: "1px solid #2A2E33", backgroundColor: "transparent",
+    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+  },
+  confirmRow: {
+    marginTop: 14, paddingTop: 14, borderTop: "1px dashed #2A2E33",
+    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap",
+  },
+  confirmText: { fontSize: 14, color: "#C7CCD1" },
+  confirmDangerBtn: {
+    padding: "7px 14px", borderRadius: 8, border: "none", backgroundColor: "#E5484D",
+    color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer",
+  },
+  confirmCancelBtn: {
+    padding: "7px 14px", borderRadius: 8, border: "1px solid #2A2E33", backgroundColor: "transparent",
+    color: "#C7CCD1", fontSize: 14, cursor: "pointer",
+  },
+  card: { backgroundColor: "#14171C", border: "1px solid #22262B", borderRadius: 16, padding: 18, marginBottom: 16 },
+  cardTitle: { fontSize: 16, fontWeight: 700, marginBottom: 14, color: "#F5F1E8" },
+  categoryRow: { display: "flex", alignItems: "center", gap: 12, marginBottom: 14 },
+  categoryIconBox: {
+    width: 34, height: 34, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  categoryRowTop: { display: "flex", justifyContent: "space-between", marginBottom: 5 },
+  categoryName: { fontSize: 15, fontWeight: 600 },
+  categoryAmount: { fontSize: 15, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace', color: "#C7CCD1" },
+  barTrack: { height: 6, borderRadius: 3, backgroundColor: "#22262B", overflow: "hidden" },
+  barFill: { height: "100%", borderRadius: 3 },
+  categoryPct: { fontSize: 14, color: "#6B7076", width: 36, textAlign: "right", flexShrink: 0 },
+  listSection: { marginBottom: 8 },
+  dateHeader: {
+    display: "flex", justifyContent: "space-between", fontSize: 14, color: "#9AA0A6",
+    padding: "0 4px 8px", borderBottom: "1px dashed #22262B", marginBottom: 8,
+  },
+  dateHeaderSum: { fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace' },
+  expenseRow: {
+    display: "flex", alignItems: "center", gap: 12, backgroundColor: "#14171C",
+    border: "1px solid #22262B", borderRadius: 12, padding: 14, marginBottom: 8,
+  },
+  rowConfirmWrap: { display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 10, flexWrap: "wrap" },
+  expenseNote: { fontSize: 15, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  expenseCatLabel: { fontSize: 13, color: "#6B7076", marginTop: 2 },
+  expenseAmount: {
+    fontSize: 16, fontWeight: 700, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace', color: "#F5F1E8", flexShrink: 0,
+  },
+  rowDeleteBtn: {
+    width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent",
+    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0,
+  },
+  emptyState: { display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px", color: "#6B7076" },
+  emptyText: { fontSize: 16, fontWeight: 600, marginTop: 12, color: "#9AA0A6" },
+  emptySub: { fontSize: 14, marginTop: 4 },
+  fab: {
+    position: "fixed", right: 20, bottom: 28, width: 58, height: 58, borderRadius: "50%",
+    backgroundColor: "#D4AF37", border: "none", display: "flex", alignItems: "center", justifyContent: "center",
+    boxShadow: "0 4px 16px rgba(212,175,55,0.4)", cursor: "pointer",
+  },
+  modalOverlay: {
+    position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)",
+    display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50,
+  },
+  modalSheet: {
+    width: "100%", maxWidth: 480, backgroundColor: "#14171C", borderRadius: "20px 20px 0 0",
+    padding: "20px 20px 28px", maxHeight: "88vh", overflowY: "auto",
+  },
+  modalHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
+  modalTitle: { fontSize: 18, fontWeight: 700 },
+  modalClose: { border: "none", backgroundColor: "transparent", cursor: "pointer", padding: 4 },
+  amountInputWrap: {
+    display: "flex", alignItems: "center", gap: 8, backgroundColor: "#0B0D10",
+    border: "1px solid #2A2E33", borderRadius: 12, padding: "14px 16px", marginBottom: 20,
+  },
+  amountSymbol: { fontSize: 24, color: "#9AA0A6", fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace' },
+  amountInput: {
+    flex: 1, fontSize: 30, fontWeight: 700, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace',
+    color: "#F5F1E8", backgroundColor: "transparent", border: "none", outline: "none",
+  },
+  formLabel: { fontSize: 14, color: "#9AA0A6", marginBottom: 8, marginTop: 4 },
+  categoryGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 },
+  categoryPick: {
+    display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 6px",
+    borderRadius: 12, border: "1px solid #2A2E33", cursor: "pointer", fontFamily: "inherit",
+  },
+  categoryPickLabel: { fontSize: 13, fontWeight: 600 },
+  textInput: {
+    width: "100%", fontSize: 16, padding: "12px 14px", borderRadius: 10, border: "1px solid #2A2E33",
+    backgroundColor: "#0B0D10", color: "#F5F1E8", marginBottom: 18, outline: "none",
+    boxSizing: "border-box", fontFamily: "inherit",
+  },
+  currencyRow: { display: "flex", gap: 10, marginBottom: 22 },
+  currencyPick: {
+    flex: 1, padding: "12px 8px", borderRadius: 10, border: "1px solid #2A2E33",
+    fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+  },
+  saveBtn: {
+    width: "100%", padding: "16px", borderRadius: 12, border: "none", backgroundColor: "#D4AF37",
+    color: "#0B0D10", fontSize: 16, fontWeight: 700, cursor: "pointer",
+  },
+};
