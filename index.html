@@ -4,1326 +4,817 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>旅費帳</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
-  html, body { margin: 0; padding: 0; background: #0B0D10; }
   * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    background-color: #0B0D10;
+    background-image: radial-gradient(ellipse 800px 400px at 50% -10%, rgba(212,175,55,0.06), transparent);
+    color: #F5F1E8;
+    font-family: "PingFang TC","Noto Sans TC",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  }
+  button { font-family: inherit; -webkit-appearance: none; appearance: none; }
+  input { font-family: inherit; }
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
+
+  .hidden { display: none !important; }
+
+  .page-container { width: 100%; max-width: 480px; margin: 0 auto; padding: 26px 22px calc(120px + env(safe-area-inset-bottom,0px)); overflow-x: hidden; }
+
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .logo-box { width: 34px; height: 34px; border-radius: 9px; background: #D4AF37; display: flex; align-items: center; justify-content: center; }
+  .header-title { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
+
+  .icon-btn, .icon-btn-sm { border: 1px solid #2A2E33; background: #14171C; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .12s ease, background-color .15s ease, border-color .15s ease; }
+  .icon-btn { width: 36px; height: 36px; border-radius: 10px; }
+  .icon-btn-sm { width: 32px; height: 32px; border-radius: 8px; background: transparent; }
+  .icon-btn:active, .icon-btn-sm:active, .press:active { transform: scale(0.96); }
+
+  .error-banner { display: flex; align-items: center; gap: 8px; background: #2A1416; border: 1px solid #4A2226; border-radius: 10px; padding: 10px 12px; font-size: 14px; color: #E5989D; margin-bottom: 14px; }
+
+  .tabs-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 24px; }
+  .tabs-row::-webkit-scrollbar, .trend-scroll::-webkit-scrollbar { height: 4px; }
+  .tabs-row::-webkit-scrollbar-thumb, .trend-scroll::-webkit-scrollbar-thumb { background: #2A2E33; border-radius: 2px; }
+  .trip-tag { position: relative; display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 12px 18px 12px 24px; border-radius: 10px; border: 1px solid #2A2E33; background: #14171C; cursor: pointer; color: #F5F1E8; transition: transform .12s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease; }
+  .trip-tag:active { transform: scale(0.96); }
+  .trip-tag.active { border-color: #D4AF37; background: #1C1710; box-shadow: 0 0 0 3px rgba(212,175,55,0.08); }
+  .trip-tag-hole { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; border-radius: 50%; background: #0B0D10; border: 1px solid #3A3F45; }
+  .trip-tag-name { font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .trip-tag-currency { font-size: 12px; font-family: ui-monospace,"SF Mono",Menlo,monospace; color: #9AA0A6; background: #0B0D10; padding: 2px 6px; border-radius: 5px; }
+  .add-trip-btn { flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px; border: 1px dashed #3A3F45; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .12s ease; }
+  .add-trip-btn:active { transform: scale(0.96); }
+
+  .summary-card { position: relative; overflow: hidden; background: #14171C; border: 1px solid #22262B; border-radius: 16px; padding: 26px 22px; margin-bottom: 22px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); animation: fadeIn .25s ease-out; }
+  .summary-glow { position: absolute; top: -50px; right: -50px; width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle, rgba(212,175,55,0.35), transparent 70%); filter: blur(18px); pointer-events: none; }
+  .summary-top { position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
+  .summary-trip-name { font-size: 15px; font-weight: 600; color: #C7CCD1; margin-bottom: 12px; }
+  .summary-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #8A7434; margin-bottom: 8px; }
+  .summary-total { font-size: 40px; font-weight: 700; font-family: ui-monospace,"SF Mono",Menlo,monospace; color: #D4AF37; line-height: 1.1; }
+  .summary-convert { font-size: 13px; color: #6B7076; margin-top: 6px; font-family: ui-monospace,"SF Mono",Menlo,monospace; }
+  .summary-sub { font-size: 14px; color: #6B7076; margin-top: 12px; }
+  .summary-actions { display: flex; gap: 8px; position: relative; flex-shrink: 0; }
+
+  .budget-block { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #2A2E33; }
+  .budget-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .budget-label { font-size: 13px; color: #9AA0A6; }
+  .budget-pct { font-size: 13px; font-weight: 700; font-family: ui-monospace,"SF Mono",Menlo,monospace; }
+  .budget-over { font-size: 12px; color: #E5989D; margin-top: 6px; }
+
+  .confirm-row { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #2A2E33; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .confirm-text { font-size: 14px; color: #C7CCD1; }
+  .btn-danger { padding: 7px 14px; border-radius: 8px; border: none; background: #E5484D; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-cancel { padding: 7px 14px; border-radius: 8px; border: 1px solid #2A2E33; background: transparent; color: #C7CCD1; font-size: 14px; cursor: pointer; }
+
+  .card { background: #14171C; border: 1px solid #22262B; border-radius: 16px; padding: 22px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+  .card-title { font-size: 16px; font-weight: 700; margin-bottom: 18px; color: #F5F1E8; }
+  .category-row { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .category-icon-box { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .category-row-top { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .category-name { font-size: 15px; font-weight: 600; }
+  .category-amount { font-size: 15px; font-family: ui-monospace,"SF Mono",Menlo,monospace; color: #C7CCD1; }
+  .bar-track { height: 6px; border-radius: 3px; background: #22262B; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width .3s ease; }
+  .category-pct { font-size: 14px; color: #6B7076; width: 36px; text-align: right; flex-shrink: 0; }
+
+  .trend-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; align-items: flex-end; }
+  .trend-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; width: 30px; }
+  .trend-bar-track { height: 90px; width: 16px; display: flex; align-items: flex-end; background: #1A1D22; border-radius: 4px; overflow: hidden; }
+  .trend-bar { width: 100%; background: #D4AF37; border-radius: 4px 4px 0 0; transition: height .3s ease; }
+  .trend-bar-label { font-size: 11px; color: #6B7076; white-space: nowrap; }
+
+  .date-header { display: flex; justify-content: space-between; font-size: 14px; color: #9AA0A6; padding: 0 4px 10px; border-bottom: 1px dashed #22262B; margin-bottom: 12px; }
+  .date-header-sum { font-family: ui-monospace,"SF Mono",Menlo,monospace; }
+  .expense-row { display: flex; align-items: center; gap: 12px; background: #14171C; border: 1px solid #22262B; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+  .row-confirm-wrap { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; flex-wrap: wrap; }
+  .expense-note { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .expense-cat-label { font-size: 13px; color: #6B7076; margin-top: 2px; }
+  .expense-amount { font-size: 16px; font-weight: 700; font-family: ui-monospace,"SF Mono",Menlo,monospace; color: #F5F1E8; flex-shrink: 0; }
+  .row-delete-btn { width: 30px; height: 30px; border-radius: 8px; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+
+  .empty-state { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; color: #6B7076; }
+  .empty-text { font-size: 16px; font-weight: 600; margin-top: 12px; color: #9AA0A6; }
+  .empty-sub { font-size: 14px; margin-top: 4px; }
+
+  .fab { position: fixed; right: 20px; bottom: calc(28px + env(safe-area-inset-bottom,0px)); width: 58px; height: 58px; border-radius: 50%; background: #D4AF37; border: none; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(212,175,55,0.4); cursor: pointer; z-index: 40; transition: transform .12s ease; }
+  .fab:active { transform: scale(0.96); }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; z-index: 50; animation: fadeBackdrop .2s ease-out; }
+  .modal-sheet { width: 100%; max-width: 480px; background: #14171C; border-radius: 20px 20px 0 0; padding: 22px 22px calc(28px + env(safe-area-inset-bottom,0px)); max-height: 88vh; overflow-y: auto; animation: slideUp .25s ease-out; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .modal-title { font-size: 18px; font-weight: 700; }
+  .modal-close { border: none; background: transparent; cursor: pointer; padding: 4px; }
+
+  .amount-input-wrap { display: flex; align-items: center; gap: 8px; background: #0B0D10; border: 1px solid #2A2E33; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; }
+  .amount-symbol { font-size: 24px; color: #9AA0A6; font-family: ui-monospace,"SF Mono",Menlo,monospace; }
+  .amount-input { flex: 1; min-width: 0; width: 100%; font-size: 30px; font-weight: 700; font-family: ui-monospace,"SF Mono",Menlo,monospace; color: #F5F1E8; background: transparent; border: none; outline: none; }
+
+  .form-label { font-size: 14px; color: #9AA0A6; margin-bottom: 10px; margin-top: 8px; }
+  .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+  .category-pick { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: 12px; border: 1px solid #2A2E33; background: #181B1F; cursor: pointer; transition: border-color .15s ease, background-color .15s ease; }
+  .category-pick-label { font-size: 13px; font-weight: 600; }
+
+  .text-input { width: 100%; font-size: 16px; padding: 14px 16px; border-radius: 10px; border: 1px solid #2A2E33; background: #0B0D10; color: #F5F1E8; margin-bottom: 22px; outline: none; box-sizing: border-box; transition: border-color .15s ease; }
+  .text-input:focus { border-color: #D4AF37; }
+
+  .currency-row { display: flex; gap: 10px; margin-bottom: 22px; }
+  .currency-pick { flex: 1; padding: 12px 8px; border-radius: 10px; border: 1px solid #2A2E33; background: #181B1F; font-size: 14px; font-weight: 600; cursor: pointer; color: #9AA0A6; transition: border-color .15s ease, background-color .15s ease, color .15s ease; }
+  .currency-pick.active { border-color: #D4AF37; background: rgba(212,175,55,0.13); color: #F5F1E8; }
+  .currency-readonly { padding: 12px 14px; border-radius: 10px; border: 1px solid #22262B; background: #0B0D10; color: #9AA0A6; font-size: 14px; margin-bottom: 22px; }
+
+  .save-btn { width: 100%; padding: 16px; border-radius: 12px; border: none; background: #D4AF37; color: #0B0D10; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .save-btn:disabled { opacity: 0.4; }
+
+  .search-input-wrap { display: flex; align-items: center; gap: 10px; background: #0B0D10; border: 1px solid #2A2E33; border-radius: 12px; padding: 12px 14px; margin-bottom: 20px; }
+  .search-input { flex: 1; min-width: 0; font-size: 16px; color: #F5F1E8; background: transparent; border: none; outline: none; }
+  .preset-row, .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .preset-btn, .chip { padding: 8px 14px; border-radius: 999px; border: 1px solid #2A2E33; background: #181B1F; font-size: 13px; font-weight: 600; cursor: pointer; color: #9AA0A6; transition: border-color .15s ease, background-color .15s ease, color .15s ease; }
+  .chip { display: flex; align-items: center; gap: 6px; }
+  .preset-btn.active, .chip.active { border-color: #D4AF37; background: rgba(212,175,55,0.13); color: #F5F1E8; }
+
+  .search-results-header { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid #22262B; margin-bottom: 10px; }
+  .results-count { font-size: 14px; color: #9AA0A6; }
+  .clear-filters-btn { border: none; background: transparent; color: #D4AF37; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+  .toast { position: fixed; top: calc(16px + env(safe-area-inset-top,0px)); left: 50%; transform: translateX(-50%); background: #1C1710; border: 1px solid #D4AF37; color: #F5F1E8; padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; z-index: 200; box-shadow: 0 4px 16px rgba(0,0,0,0.4); animation: fadeIn .2s ease-out; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes fadeBackdrop { from { opacity: 0; } to { opacity: 1; } }
 </style>
 </head>
 <body>
-<div id="root"></div>
+
+<div id="toast" class="toast hidden"></div>
+<div id="app" class="page-container"></div>
+<button id="fab" class="fab hidden" data-action="open-add-expense" aria-label="新增支出"></button>
+<div id="modalRoot"></div>
 
 <script>
-  // Polyfill Claude's artifact-only window.storage API using plain localStorage,
-  // so the rest of the app code doesn't need to change.
-  window.storage = {
-    async get(key) {
-      const v = localStorage.getItem(key);
-      if (v === null) return null;
-      return { key, value: v };
-    },
-    async set(key, value) {
-      localStorage.setItem(key, value);
-      return { key, value };
-    },
-    async delete(key) {
-      const existed = localStorage.getItem(key) !== null;
-      localStorage.removeItem(key);
-      return { key, deleted: existed };
-    },
-    async list(prefix) {
-      const keys = Object.keys(localStorage).filter((k) => !prefix || k.startsWith(prefix));
-      return { keys };
-    },
+'use strict';
+
+var STORAGE_KEY = 'travel-ledger-data';
+
+var CATEGORIES = [
+  { id: 'food', label: '飲食', icon: 'utensils', color: '#D4AF37' },
+  { id: 'transport', label: '交通', icon: 'car', color: '#4FD1C5' },
+  { id: 'stay', label: '住宿', icon: 'bed', color: '#9B7EDE' },
+  { id: 'shopping', label: '購物', icon: 'bag', color: '#E08585' },
+  { id: 'fun', label: '娛樂', icon: 'ticket', color: '#6FCF97' },
+  { id: 'other', label: '其他', icon: 'more', color: '#8A8F98' }
+];
+
+var CURRENCIES = [
+  { code: 'TWD', symbol: 'NT$', label: '台幣' },
+  { code: 'JPY', symbol: '¥', label: '日圓' },
+  { code: 'USD', symbol: '$', label: '美金' }
+];
+
+var WEEKDAYS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+
+/* ---------- icon markup (plain SVG strings, no library needed) ---------- */
+function icon(name, size, color) {
+  size = size || 20; color = color || 'currentColor';
+  var paths = {
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+    trash: '<line x1="4" y1="7" x2="20" y2="7"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+    wallet: '<path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v3"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-4a2 2 0 0 0 0 4h5"/>',
+    utensils: '<path d="M7 2v6a2 2 0 0 0 2 2v12"/><path d="M5 2v6M9 2v6"/><path d="M17 2c-1.5 0-3 1.5-3 4v5c0 1 1 2 2 2v9"/>',
+    car: '<path d="M3 13l2-6a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 6"/><path d="M3 13h18v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4z"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/>',
+    bed: '<path d="M2 18v-6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6"/><path d="M2 18v2M22 18v2"/><path d="M2 13V9a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v3"/><path d="M13 13V9a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v3"/>',
+    bag: '<path d="M6 8h12l1 12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+    ticket: '<path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8z"/><line x1="10" y1="6" x2="10" y2="18" stroke-dasharray="2 2"/>',
+    more: '<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/>',
+    alert: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16.01"/>',
+    search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+    edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>',
+    copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
   };
-</script>
-
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useCallback } = React;
-
-/* ---------- Hand-drawn icon set (replaces lucide-react, no extra deps) ---------- */
-function IconPlus({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-function IconX({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
-function IconTrash({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="4" y1="7" x2="20" y2="7" />
-      <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
-      <path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
-      <line x1="10" y1="11" x2="10" y2="17" />
-      <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
-  );
-}
-function IconWallet({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v3" />
-      <path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-4a2 2 0 0 0 0 4h5" />
-    </svg>
-  );
-}
-function IconUtensils({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M7 2v6a2 2 0 0 0 2 2v12" />
-      <path d="M5 2v6M9 2v6" />
-      <path d="M17 2c-1.5 0-3 1.5-3 4v5c0 1 1 2 2 2v9" />
-    </svg>
-  );
-}
-function IconCar({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 13l2-6a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 6" />
-      <path d="M3 13h18v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4z" />
-      <circle cx="7.5" cy="17" r="1.5" />
-      <circle cx="16.5" cy="17" r="1.5" />
-    </svg>
-  );
-}
-function IconBed({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 18v-6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6" />
-      <path d="M2 18v2M22 18v2" />
-      <path d="M2 13V9a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v3" />
-      <path d="M13 13V9a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v3" />
-    </svg>
-  );
-}
-function IconBag({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 8h12l1 12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L6 8z" />
-      <path d="M9 8V6a3 3 0 0 1 6 0v2" />
-    </svg>
-  );
-}
-function IconTicket({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8z" />
-      <line x1="10" y1="6" x2="10" y2="18" strokeDasharray="2 2" />
-    </svg>
-  );
-}
-function IconMore({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-      <circle cx="5" cy="12" r="1.8" />
-      <circle cx="12" cy="12" r="1.8" />
-      <circle cx="19" cy="12" r="1.8" />
-    </svg>
-  );
-}
-function IconCalendar({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-      <line x1="8" y1="3" x2="8" y2="7" />
-      <line x1="16" y1="3" x2="16" y2="7" />
-    </svg>
-  );
-}
-function IconAlert({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="9" />
-      <line x1="12" y1="8" x2="12" y2="13" />
-      <line x1="12" y1="16" x2="12" y2="16.01" />
-    </svg>
-  );
-}
-function IconSearch({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="7" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}
-function IconEdit({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-    </svg>
-  );
-}
-function IconCopy({ size = 20, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="9" y="9" width="12" height="12" rx="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-    </svg>
-  );
+  var fillIcons = { more: true };
+  var isFill = !!fillIcons[name];
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="' + (isFill ? color : 'none') + '" stroke="' + (isFill ? 'none' : color) + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (paths[name] || '') + '</svg>';
 }
 
-const STORAGE_KEY = "travel-ledger-data";
-
-const CATEGORIES = [
-  { id: "food", label: "飲食", icon: IconUtensils, color: "#D4AF37" },
-  { id: "transport", label: "交通", icon: IconCar, color: "#4FD1C5" },
-  { id: "stay", label: "住宿", icon: IconBed, color: "#9B7EDE" },
-  { id: "shopping", label: "購物", icon: IconBag, color: "#E08585" },
-  { id: "fun", label: "娛樂", icon: IconTicket, color: "#6FCF97" },
-  { id: "other", label: "其他", icon: IconMore, color: "#8A8F98" },
-];
-
-const CURRENCIES = [
-  { code: "TWD", symbol: "NT$", label: "台幣" },
-  { code: "JPY", symbol: "¥", label: "日圓" },
-  { code: "USD", symbol: "$", label: "美金" },
-];
-
-const WEEKDAYS = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
-
-const GLOBAL_CSS = `
-@keyframes ledgerFadeIn { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:translateY(0);} }
-@keyframes ledgerSlideUp { from { transform: translateY(100%);} to { transform: translateY(0);} }
-@keyframes ledgerFadeBackdrop { from {opacity:0;} to {opacity:1;} }
-.lg-tabs::-webkit-scrollbar { height: 4px; }
-.lg-tabs::-webkit-scrollbar-thumb { background: #2A2E33; border-radius: 2px; }
-.lg-tabs::-webkit-scrollbar-track { background: transparent; }
-.lg-press { transition: transform .12s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease; }
-.lg-press:active { transform: scale(0.96); }
-.lg-input { transition: border-color .15s ease; }
-.lg-input:focus { outline: none; border-color: #D4AF37 !important; }
-`;
-
+/* ---------- helpers ---------- */
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 function todayLocal() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
-
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
-
+function findCategory(id) {
+  for (var i = 0; i < CATEGORIES.length; i++) { if (CATEGORIES[i].id === id) return CATEGORIES[i]; }
+  return CATEGORIES[5];
+}
+function findCurrency(code) {
+  for (var i = 0; i < CURRENCIES.length; i++) { if (CURRENCIES[i].code === code) return CURRENCIES[i]; }
+  return CURRENCIES[0];
+}
 function formatMoney(amount, code) {
-  const n = Number(amount) || 0;
-  const symbol = CURRENCIES.find((c) => c.code === code)?.symbol || "";
-  const decimals = code === "USD" ? 2 : 0;
-  const formatted = n.toLocaleString("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-  return `${symbol}${formatted}`;
+  var n = Number(amount) || 0;
+  var symbol = findCurrency(code).symbol;
+  var decimals = code === 'USD' ? 2 : 0;
+  var formatted = n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  return symbol + formatted;
 }
-
 function formatDateLabel(dateStr) {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const dt = new Date(y, m - 1, d);
-  return `${m}/${d} ${WEEKDAYS[dt.getDay()]}`;
+  var parts = dateStr.split('-').map(Number);
+  var dt = new Date(parts[0], parts[1] - 1, parts[2]);
+  return parts[1] + '/' + parts[2] + ' ' + WEEKDAYS[dt.getDay()];
 }
-
 function groupExpensesByDate(expenses) {
-  const map = {};
-  expenses.forEach((e) => {
+  var map = {};
+  expenses.forEach(function (e) {
     if (!map[e.date]) map[e.date] = [];
     map[e.date].push(e);
   });
-  const keys = Object.keys(map).sort((a, b) => (a < b ? 1 : -1));
-  keys.forEach((k) => map[k].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
-  return { map, keys };
+  var keys = Object.keys(map).sort(function (a, b) { return a < b ? 1 : -1; });
+  keys.forEach(function (k) { map[k].sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }); });
+  return { map: map, keys: keys };
 }
-
 function getRangeForPreset(preset) {
-  const today = todayLocal();
-  if (preset === "today") return { from: today, to: today };
-  if (preset === "week") {
-    const d = new Date();
-    const day = d.getDay();
-    const diffToMonday = day === 0 ? 6 : day - 1;
-    const monday = new Date(d);
+  var today = todayLocal();
+  if (preset === 'today') return { from: today, to: today };
+  if (preset === 'week') {
+    var d = new Date();
+    var day = d.getDay();
+    var diffToMonday = day === 0 ? 6 : day - 1;
+    var monday = new Date(d);
     monday.setDate(d.getDate() - diffToMonday);
-    const from = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
-    return { from, to: today };
+    var from = monday.getFullYear() + '-' + String(monday.getMonth() + 1).padStart(2, '0') + '-' + String(monday.getDate()).padStart(2, '0');
+    return { from: from, to: today };
   }
-  if (preset === "month") {
-    const d = new Date();
-    const from = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-    return { from, to: today };
+  if (preset === 'month') {
+    var d2 = new Date();
+    var from2 = d2.getFullYear() + '-' + String(d2.getMonth() + 1).padStart(2, '0') + '-01';
+    return { from: from2, to: today };
   }
-  return { from: "", to: "" };
+  return { from: '', to: '' };
+}
+function defaultData() {
+  return { trips: [{ id: uid(), name: '宜蘭兩日遊', currency: 'TWD', budget: 0, exchangeRate: 0, createdAt: Date.now() }], expenses: [] };
 }
 
-const defaultData = () => ({
-  trips: [{ id: uid(), name: "宜蘭兩日遊", currency: "TWD", budget: 0, exchangeRate: 0, createdAt: Date.now() }],
-  expenses: [],
-});
+/* ---------- persistence (synchronous localStorage, no async needed) ---------- */
+function loadData() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return defaultData();
+}
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    saveErrorFlag = false;
+  } catch (e) {
+    saveErrorFlag = true;
+  }
+}
 
-function ExpenseTracker() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saveError, setSaveError] = useState(false);
-  const [activeTripId, setActiveTripId] = useState(null);
+/* ---------- global state ---------- */
+var appData = null;
+var activeTripId = null;
+var confirmDeleteExpenseId = null;
+var confirmDeleteTripFlag = false;
+var saveErrorFlag = false;
+var modalOpen = null;
+var currentExpenseCategory = 'food';
+var editingTripId = null;
+var currentNewTripCurrency = 'TWD';
+var searchState = { query: '', preset: 'all', dateFrom: '', dateTo: '', scope: 'current', categories: {} };
 
-  const [showAddTrip, setShowAddTrip] = useState(false);
-  const [editingTripId, setEditingTripId] = useState(null);
-  const [newTripName, setNewTripName] = useState("");
-  const [newTripCurrency, setNewTripCurrency] = useState("TWD");
-  const [newTripBudget, setNewTripBudget] = useState("");
-  const [newTripExchangeRate, setNewTripExchangeRate] = useState("");
+function getActiveTrip() {
+  for (var i = 0; i < appData.trips.length; i++) { if (appData.trips[i].id === activeTripId) return appData.trips[i]; }
+  return appData.trips[0];
+}
 
-  const [showAddExpense, setShowAddExpense] = useState(false);
-  const [formAmount, setFormAmount] = useState("");
-  const [formCategory, setFormCategory] = useState("food");
-  const [formNote, setFormNote] = useState("");
-  const [formDate, setFormDate] = useState(todayLocal());
+/* ---------- main render ---------- */
+function renderApp() {
+  var root = document.getElementById('app');
+  var fab = document.getElementById('fab');
+  if (!appData.trips.length) { root.innerHTML = ''; fab.classList.add('hidden'); return; }
+  var activeTrip = getActiveTrip();
+  activeTripId = activeTrip.id;
+  fab.classList.remove('hidden');
+  fab.innerHTML = icon('plus', 26, '#0B0D10');
 
-  const [confirmDeleteExpense, setConfirmDeleteExpense] = useState(null);
-  const [confirmDeleteTrip, setConfirmDeleteTrip] = useState(false);
-  const [shareToast, setShareToast] = useState(false);
+  var tripExpenses = appData.expenses.filter(function (e) { return e.tripId === activeTrip.id; });
+  var total = tripExpenses.reduce(function (s, e) { return s + Number(e.amount); }, 0);
+  var budget = activeTrip.budget || 0;
+  var hasBudget = budget > 0;
+  var budgetPct = hasBudget ? Math.round((total / budget) * 100) : 0;
+  var budgetColor = budgetPct >= 100 ? '#E5484D' : budgetPct >= 80 ? '#D4AF37' : '#6FCF97';
+  var exchangeRate = activeTrip.exchangeRate || 0;
+  var showConversion = activeTrip.currency !== 'TWD' && exchangeRate > 0;
 
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchPreset, setSearchPreset] = useState("all");
-  const [searchDateFrom, setSearchDateFrom] = useState("");
-  const [searchDateTo, setSearchDateTo] = useState("");
-  const [searchScope, setSearchScope] = useState("current");
-  const [searchCategories, setSearchCategories] = useState(() => new Set());
+  var categoryTotals = CATEGORIES.map(function (c) {
+    var t = tripExpenses.filter(function (e) { return e.category === c.id; }).reduce(function (s, e) { return s + Number(e.amount); }, 0);
+    return { id: c.id, label: c.label, icon: c.icon, color: c.color, total: t };
+  }).filter(function (c) { return c.total > 0; }).sort(function (a, b) { return b.total - a.total; });
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await window.storage.get(STORAGE_KEY);
-        const parsed = res ? JSON.parse(res.value) : defaultData();
-        setData(parsed);
-        setActiveTripId(parsed.trips[0]?.id || null);
-      } catch (e) {
-        const fresh = defaultData();
-        setData(fresh);
-        setActiveTripId(fresh.trips[0]?.id || null);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  var grouped = groupExpensesByDate(tripExpenses);
+  var groupsMap = grouped.map, dateKeys = grouped.keys;
+  var trendDates = dateKeys.slice().reverse();
+  var trendMax = Math.max.apply(null, [1].concat(trendDates.map(function (d) { return groupsMap[d].reduce(function (s, e) { return s + Number(e.amount); }, 0); })));
 
-  useEffect(() => {
-    setConfirmDeleteTrip(false);
-    setConfirmDeleteExpense(null);
-  }, [activeTripId]);
+  var html = '';
+  html += '<div class="header"><div class="header-left"><div class="logo-box">' + icon('wallet', 20, '#0B0D10') + '</div><span class="header-title">旅費帳</span></div>';
+  html += '<button class="icon-btn" data-action="open-search" aria-label="搜尋">' + icon('search', 18, '#D4AF37') + '</button></div>';
 
-  const persist = useCallback(async (next) => {
-    try {
-      await window.storage.set(STORAGE_KEY, JSON.stringify(next));
-      setSaveError(false);
-    } catch (e) {
-      setSaveError(true);
-    }
-  }, []);
-
-  const updateData = (updater) => {
-    setData((prev) => {
-      const next = updater(prev);
-      persist(next);
-      return next;
-    });
-  };
-
-  if (loading || !data) {
-    return (
-      <div style={styles.loadingWrap}>
-        <IconWallet size={32} color="#D4AF37" />
-        <div style={{ marginTop: 12, color: "#9AA0A6", fontSize: 16 }}>載入中...</div>
-      </div>
-    );
+  if (saveErrorFlag) {
+    html += '<div class="error-banner">' + icon('alert', 16, '#E5484D') + '<span>尚未同步儲存，請檢查瀏覽器儲存空間</span></div>';
   }
 
-  const activeTrip = data.trips.find((t) => t.id === activeTripId) || data.trips[0];
-  const tripExpenses = data.expenses.filter((e) => e.tripId === activeTrip?.id);
-  const total = tripExpenses.reduce((s, e) => s + Number(e.amount), 0);
-
-  const budget = activeTrip?.budget || 0;
-  const hasBudget = budget > 0;
-  const budgetPct = hasBudget ? Math.round((total / budget) * 100) : 0;
-  const budgetColor = budgetPct >= 100 ? "#E5484D" : budgetPct >= 80 ? "#D4AF37" : "#6FCF97";
-
-  const exchangeRate = activeTrip?.exchangeRate || 0;
-  const showConversion = activeTrip && activeTrip.currency !== "TWD" && exchangeRate > 0;
-
-  const categoryTotals = CATEGORIES.map((c) => ({
-    ...c,
-    total: tripExpenses.filter((e) => e.category === c.id).reduce((s, e) => s + Number(e.amount), 0),
-  }))
-    .filter((c) => c.total > 0)
-    .sort((a, b) => b.total - a.total);
-
-  const { map: groupsMap, keys: dateKeys } = groupExpensesByDate(tripExpenses);
-  const trendDates = [...dateKeys].reverse();
-  const trendMax = Math.max(1, ...trendDates.map((d) => groupsMap[d].reduce((s, e) => s + Number(e.amount), 0)));
-
-  const tripCurrencyMap = {};
-  const tripNameMap = {};
-  data.trips.forEach((t) => {
-    tripCurrencyMap[t.id] = t.currency;
-    tripNameMap[t.id] = t.name;
+  html += '<div class="tabs-row">';
+  appData.trips.forEach(function (t) {
+    html += '<button class="trip-tag' + (t.id === activeTrip.id ? ' active' : '') + '" data-action="select-trip" data-trip-id="' + t.id + '">';
+    html += '<span class="trip-tag-hole"></span><span class="trip-tag-name">' + escapeHtml(t.name) + '</span><span class="trip-tag-currency">' + t.currency + '</span></button>';
   });
+  html += '<button class="add-trip-btn" data-action="open-add-trip">' + icon('plus', 18, '#D4AF37') + '</button></div>';
 
-  const searchPool = searchScope === "all" ? data.expenses : tripExpenses;
-  const searchQ = searchQuery.trim().toLowerCase();
-  const searchResultsList = searchPool.filter((e) => {
-    if (searchCategories.size > 0 && !searchCategories.has(e.category)) return false;
-    if (searchDateFrom && e.date < searchDateFrom) return false;
-    if (searchDateTo && e.date > searchDateTo) return false;
-    if (searchQ) {
-      const catLabel = (CATEGORIES.find((c) => c.id === e.category) || {}).label || "";
-      const hay = (e.note + " " + catLabel).toLowerCase();
-      if (!hay.includes(searchQ)) return false;
+  html += '<div class="summary-card"><div class="summary-glow"></div><div class="summary-top"><div style="flex:1;min-width:0;">';
+  html += '<div class="summary-trip-name">' + escapeHtml(activeTrip.name) + '</div>';
+  html += '<div class="summary-eyebrow">支出總額</div>';
+  html += '<div class="summary-total">' + formatMoney(total, activeTrip.currency) + '</div>';
+  if (showConversion) html += '<div class="summary-convert">≈ ' + formatMoney(total * exchangeRate, 'TWD') + '</div>';
+  html += '<div class="summary-sub">' + tripExpenses.length + ' 筆紀錄</div></div>';
+  html += '<div class="summary-actions">';
+  html += '<button class="icon-btn-sm" data-action="open-edit-trip" data-trip-id="' + activeTrip.id + '" aria-label="編輯行程">' + icon('edit', 14, '#6B7076') + '</button>';
+  html += '<button class="icon-btn-sm" data-action="share-summary" aria-label="複製摘要">' + icon('copy', 14, '#6B7076') + '</button>';
+  html += '<button class="icon-btn-sm" data-action="ask-delete-trip" aria-label="刪除行程">' + icon('trash', 14, '#6B7076') + '</button>';
+  html += '</div></div>';
+
+  if (hasBudget) {
+    html += '<div class="budget-block"><div class="budget-row"><span class="budget-label">預算 ' + formatMoney(budget, activeTrip.currency) + '</span>';
+    html += '<span class="budget-pct" style="color:' + budgetColor + '">' + budgetPct + '%</span></div>';
+    html += '<div class="bar-track"><div class="bar-fill" style="width:' + Math.min(budgetPct, 100) + '%;background-color:' + budgetColor + '"></div></div>';
+    if (budgetPct >= 100) html += '<div class="budget-over">超出預算 ' + formatMoney(total - budget, activeTrip.currency) + '</div>';
+    html += '</div>';
+  }
+
+  if (confirmDeleteTripFlag) {
+    html += '<div class="confirm-row"><span class="confirm-text">' + (appData.trips.length <= 1 ? '至少要保留一個行程' : ('確定刪除「' + escapeHtml(activeTrip.name) + '」及其所有紀錄?')) + '</span><div style="display:flex;gap:8px;">';
+    if (appData.trips.length > 1) html += '<button class="btn-danger" data-action="confirm-delete-trip">刪除</button>';
+    html += '<button class="btn-cancel" data-action="cancel-delete-trip">取消</button></div></div>';
+  }
+  html += '</div>'; // end summary-card
+
+  if (categoryTotals.length > 0) {
+    html += '<div class="card"><div class="card-title">分類統計</div>';
+    categoryTotals.forEach(function (c) {
+      var pct = total > 0 ? Math.round((c.total / total) * 100) : 0;
+      html += '<div class="category-row"><div class="category-icon-box" style="background-color:' + c.color + '22">' + icon(c.icon, 16, c.color) + '</div>';
+      html += '<div style="flex:1;min-width:0;"><div class="category-row-top"><span class="category-name">' + c.label + '</span><span class="category-amount">' + formatMoney(c.total, activeTrip.currency) + '</span></div>';
+      html += '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background-color:' + c.color + '"></div></div></div>';
+      html += '<span class="category-pct">' + pct + '%</span></div>';
+    });
+    html += '</div>';
+  }
+
+  if (trendDates.length > 1) {
+    html += '<div class="card"><div class="card-title">花費趨勢</div><div class="trend-scroll">';
+    trendDates.forEach(function (d) {
+      var sum = groupsMap[d].reduce(function (s, e) { return s + Number(e.amount); }, 0);
+      var h = Math.max(6, Math.round((sum / trendMax) * 90));
+      html += '<div class="trend-bar-wrap"><div class="trend-bar-track"><div class="trend-bar" style="height:' + h + 'px"></div></div>';
+      html += '<div class="trend-bar-label">' + formatDateLabel(d).split(' ')[0] + '</div></div>';
+    });
+    html += '</div></div>';
+  }
+
+  html += '<div><div class="card-title">支出紀錄</div>';
+  if (dateKeys.length === 0) {
+    html += '<div class="empty-state">' + icon('calendar', 28, '#4A4F55') + '<div class="empty-text">還沒有支出紀錄</div><div class="empty-sub">點右下角「＋」開始記帳</div></div>';
+  } else {
+    dateKeys.forEach(function (dateKey) {
+      var dayExpenses = groupsMap[dateKey];
+      var daySum = dayExpenses.reduce(function (s, e) { return s + Number(e.amount); }, 0);
+      html += '<div style="margin-bottom:22px;"><div class="date-header"><span>' + formatDateLabel(dateKey) + '</span><span class="date-header-sum">' + formatMoney(daySum, activeTrip.currency) + '</span></div>';
+      dayExpenses.forEach(function (e) { html += renderExpenseRow(e, activeTrip.currency, {}); });
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  root.innerHTML = html;
+}
+
+function renderExpenseRow(e, currency, opts) {
+  opts = opts || {};
+  var cat = findCategory(e.category);
+  if (confirmDeleteExpenseId === e.id) {
+    return '<div class="expense-row"><div class="row-confirm-wrap"><span class="confirm-text">刪除這筆紀錄?</span><div style="display:flex;gap:8px;">' +
+      '<button class="btn-danger" data-action="confirm-delete-expense" data-expense-id="' + e.id + '">刪除</button>' +
+      '<button class="btn-cancel" data-action="cancel-delete-expense">取消</button></div></div></div>';
+  }
+  var subParts = [];
+  if (opts.tripName) subParts.push(escapeHtml(opts.tripName));
+  if (e.note) subParts.push(cat.label);
+  var subText = subParts.join(' · ');
+  var html = '<div class="expense-row"><div class="category-icon-box" style="background-color:' + cat.color + '22">' + icon(cat.icon, 18, cat.color) + '</div>';
+  html += '<div style="flex:1;min-width:0;"><div class="expense-note">' + escapeHtml(e.note || cat.label) + '</div>';
+  if (subText) html += '<div class="expense-cat-label">' + subText + '</div>';
+  html += '</div><div class="expense-amount">' + formatMoney(e.amount, currency) + '</div>';
+  html += '<button class="row-delete-btn" data-action="ask-delete-expense" data-expense-id="' + e.id + '" aria-label="刪除">' + icon('trash', 15, '#6B7076') + '</button></div>';
+  return html;
+}
+
+/* ---------- expense modal ---------- */
+function openExpenseModal() {
+  currentExpenseCategory = 'food';
+  var activeTrip = getActiveTrip();
+  var symbol = findCurrency(activeTrip.currency).symbol;
+  var html = '<div class="modal-overlay"><div class="modal-sheet">';
+  html += '<div class="modal-header"><span class="modal-title">新增支出</span><button class="modal-close" data-action="close-modal">' + icon('x', 20, '#9AA0A6') + '</button></div>';
+  html += '<div class="amount-input-wrap"><span class="amount-symbol">' + symbol + '</span><input type="number" inputmode="decimal" id="expenseAmountInput" class="amount-input" placeholder="0"></div>';
+  html += '<div class="form-label">分類</div><div class="category-grid" id="expenseCategoryGrid"></div>';
+  html += '<div class="form-label">備註（選填）</div><input type="text" id="expenseNoteInput" class="text-input" placeholder="例如：午餐、伴手禮...">';
+  html += '<div class="form-label">日期</div><input type="date" id="expenseDateInput" class="text-input" value="' + todayLocal() + '">';
+  html += '<button class="save-btn" id="expenseSaveBtn" data-action="save-expense" disabled>儲存</button>';
+  html += '</div></div>';
+  document.getElementById('modalRoot').innerHTML = html;
+  modalOpen = 'expense';
+  refreshExpenseCategoryGrid();
+  var amtInput = document.getElementById('expenseAmountInput');
+  amtInput.addEventListener('input', function () {
+    var val = parseFloat(this.value);
+    var btn = document.getElementById('expenseSaveBtn');
+    btn.disabled = !(val > 0);
+  });
+  amtInput.focus();
+}
+function refreshExpenseCategoryGrid() {
+  var grid = document.getElementById('expenseCategoryGrid');
+  if (!grid) return;
+  grid.innerHTML = CATEGORIES.map(function (c) {
+    var active = c.id === currentExpenseCategory;
+    return '<button class="category-pick" data-cat="' + c.id + '" data-action="pick-expense-category" style="border-color:' + (active ? c.color : '#2A2E33') + ';background-color:' + (active ? c.color + '1A' : '#181B1F') + '">' +
+      icon(c.icon, 20, active ? c.color : '#9AA0A6') +
+      '<span class="category-pick-label" style="color:' + (active ? '#F5F1E8' : '#9AA0A6') + '">' + c.label + '</span></button>';
+  }).join('');
+}
+function doSaveExpense() {
+  var amt = parseFloat(document.getElementById('expenseAmountInput').value);
+  if (!amt || amt <= 0) return;
+  var note = document.getElementById('expenseNoteInput').value.trim();
+  var date = document.getElementById('expenseDateInput').value || todayLocal();
+  var activeTrip = getActiveTrip();
+  appData.expenses.push({ id: uid(), tripId: activeTrip.id, amount: amt, category: currentExpenseCategory, note: note, date: date, createdAt: Date.now() });
+  saveData();
+  closeModal();
+  renderApp();
+}
+
+/* ---------- trip modal (add / edit) ---------- */
+function exchangeLabelText(code) { return '匯率（選填，1 ' + findCurrency(code).symbol + ' ≈ 多少台幣）'; }
+
+function openTripModal(tripId) {
+  editingTripId = tripId || null;
+  var trip = tripId ? appData.trips.filter(function (t) { return t.id === tripId; })[0] : null;
+  currentNewTripCurrency = trip ? trip.currency : 'TWD';
+  var nameVal = trip ? trip.name : '';
+  var budgetVal = trip && trip.budget ? trip.budget : '';
+  var rateVal = trip && trip.exchangeRate ? trip.exchangeRate : '';
+
+  var currencyBlock;
+  if (trip) {
+    currencyBlock = '<div class="currency-readonly">' + findCurrency(currentNewTripCurrency).symbol + ' ' + findCurrency(currentNewTripCurrency).label + '（建立後無法更改）</div>';
+  } else {
+    currencyBlock = '<div class="currency-row" id="tripCurrencyRow">' + CURRENCIES.map(function (c) {
+      return '<button class="currency-pick' + (c.code === 'TWD' ? ' active' : '') + '" data-code="' + c.code + '" data-action="pick-trip-currency">' + c.symbol + ' ' + c.label + '</button>';
+    }).join('') + '</div>';
+  }
+
+  var html = '<div class="modal-overlay"><div class="modal-sheet">';
+  html += '<div class="modal-header"><span class="modal-title">' + (trip ? '編輯行程' : '新增行程') + '</span><button class="modal-close" data-action="close-modal">' + icon('x', 20, '#9AA0A6') + '</button></div>';
+  html += '<div class="form-label">行程名稱</div><input type="text" id="tripNameInput" class="text-input" placeholder="例如：日本七日遊" value="' + escapeHtml(nameVal) + '">';
+  html += '<div class="form-label">幣別</div>' + currencyBlock;
+  html += '<div class="form-label">預算（選填）</div><input type="number" inputmode="decimal" id="tripBudgetInput" class="text-input" placeholder="例如 5000" value="' + budgetVal + '">';
+  html += '<div id="tripExchangeWrap" class="' + (currentNewTripCurrency === 'TWD' ? 'hidden' : '') + '">';
+  html += '<div class="form-label" id="tripExchangeLabel">' + exchangeLabelText(currentNewTripCurrency) + '</div>';
+  html += '<input type="number" step="0.0001" inputmode="decimal" id="tripExchangeInput" class="text-input" placeholder="例如 0.21" value="' + rateVal + '"></div>';
+  html += '<button class="save-btn" id="tripSaveBtn" data-action="save-trip" disabled>' + (trip ? '儲存變更' : '建立行程') + '</button>';
+  html += '</div></div>';
+
+  document.getElementById('modalRoot').innerHTML = html;
+  modalOpen = 'trip';
+  var nameInput = document.getElementById('tripNameInput');
+  function syncSaveBtn() {
+    var btn = document.getElementById('tripSaveBtn');
+    btn.disabled = !nameInput.value.trim();
+  }
+  nameInput.addEventListener('input', syncSaveBtn);
+  syncSaveBtn();
+  nameInput.focus();
+}
+function doSaveTrip() {
+  var name = document.getElementById('tripNameInput').value.trim();
+  if (!name) return;
+  var budget = parseFloat(document.getElementById('tripBudgetInput').value) || 0;
+  var rateInput = document.getElementById('tripExchangeInput');
+  var rate = rateInput ? (parseFloat(rateInput.value) || 0) : 0;
+  if (editingTripId) {
+    var t = appData.trips.filter(function (x) { return x.id === editingTripId; })[0];
+    t.name = name; t.budget = budget; t.exchangeRate = rate;
+  } else {
+    var trip = { id: uid(), name: name, currency: currentNewTripCurrency, budget: budget, exchangeRate: rate, createdAt: Date.now() };
+    appData.trips.push(trip);
+    activeTripId = trip.id;
+  }
+  saveData();
+  closeModal();
+  renderApp();
+}
+function doDeleteTrip() {
+  if (appData.trips.length <= 1) return;
+  var activeTrip = getActiveTrip();
+  appData.trips = appData.trips.filter(function (t) { return t.id !== activeTrip.id; });
+  appData.expenses = appData.expenses.filter(function (e) { return e.tripId !== activeTrip.id; });
+  activeTripId = appData.trips.length ? appData.trips[0].id : null;
+  confirmDeleteTripFlag = false;
+  saveData();
+  renderApp();
+}
+function doDeleteExpense(id) {
+  appData.expenses = appData.expenses.filter(function (e) { return e.id !== id; });
+  confirmDeleteExpenseId = null;
+  saveData();
+  renderApp();
+  if (modalOpen === 'search') renderSearchResults();
+}
+
+/* ---------- search modal ---------- */
+function openSearchModal() {
+  searchState = { query: '', preset: 'all', dateFrom: '', dateTo: '', scope: 'current', categories: {} };
+  var activeTrip = getActiveTrip();
+  var multiTrip = appData.trips.length > 1;
+
+  var html = '<div class="modal-overlay"><div class="modal-sheet" style="max-height:92vh;">';
+  html += '<div class="modal-header"><span class="modal-title">搜尋支出</span><button class="modal-close" data-action="close-modal">' + icon('x', 20, '#9AA0A6') + '</button></div>';
+  html += '<div class="search-input-wrap">' + icon('search', 18, '#6B7076') + '<input type="text" id="searchQueryInput" class="search-input" placeholder="搜尋備註或分類..."></div>';
+  html += '<div class="form-label">時間範圍</div><div class="preset-row" id="presetRow">';
+  [['all', '全部時間'], ['today', '今天'], ['week', '本週'], ['month', '本月'], ['custom', '自訂']].forEach(function (p) {
+    html += '<button class="preset-btn' + (p[0] === 'all' ? ' active' : '') + '" data-preset="' + p[0] + '" data-action="pick-preset">' + p[1] + '</button>';
+  });
+  html += '</div>';
+  html += '<div id="customDateRow" class="hidden" style="display:flex;gap:10px;margin-bottom:18px;">';
+  html += '<input type="date" id="searchDateFrom" class="text-input" style="margin-bottom:0;flex:1;min-width:0;">';
+  html += '<input type="date" id="searchDateTo" class="text-input" style="margin-bottom:0;flex:1;min-width:0;"></div>';
+  if (multiTrip) {
+    html += '<div class="form-label">搜尋範圍</div><div class="currency-row" id="scopeRow">';
+    html += '<button class="currency-pick active" data-scope="current" data-action="pick-scope">僅「' + escapeHtml(activeTrip.name) + '」</button>';
+    html += '<button class="currency-pick" data-scope="all" data-action="pick-scope">所有行程</button></div>';
+  }
+  html += '<div class="form-label">分類</div><div class="chip-row" id="searchChipRow">';
+  CATEGORIES.forEach(function (c) {
+    html += '<button class="chip" data-cat="' + c.id + '" data-action="toggle-search-cat">' + icon(c.icon, 14, '#9AA0A6') + c.label + '</button>';
+  });
+  html += '</div>';
+  html += '<div class="search-results-header"><span class="results-count" id="resultsCount">沒有符合的紀錄</span>';
+  html += '<button class="clear-filters-btn" data-action="clear-search-filters">清除篩選</button></div>';
+  html += '<div id="searchResultsBox" style="margin-top:4px;"></div>';
+  html += '</div></div>';
+
+  document.getElementById('modalRoot').innerHTML = html;
+  modalOpen = 'search';
+  document.getElementById('searchQueryInput').addEventListener('input', function () { searchState.query = this.value; renderSearchResults(); });
+  document.getElementById('searchDateFrom').addEventListener('input', function () { searchState.dateFrom = this.value; searchState.preset = 'custom'; syncPresetButtons(); renderSearchResults(); });
+  document.getElementById('searchDateTo').addEventListener('input', function () { searchState.dateTo = this.value; searchState.preset = 'custom'; syncPresetButtons(); renderSearchResults(); });
+  document.getElementById('searchQueryInput').focus();
+  renderSearchResults();
+}
+function syncPresetButtons() {
+  var buttons = document.querySelectorAll('#presetRow .preset-btn');
+  buttons.forEach(function (btn) { btn.classList.toggle('active', btn.getAttribute('data-preset') === searchState.preset); });
+}
+function applyPreset(preset) {
+  searchState.preset = preset;
+  if (preset === 'all') { searchState.dateFrom = ''; searchState.dateTo = ''; }
+  else if (preset !== 'custom') {
+    var r = getRangeForPreset(preset);
+    searchState.dateFrom = r.from; searchState.dateTo = r.to;
+  }
+  syncPresetButtons();
+  document.getElementById('customDateRow').classList.toggle('hidden', preset !== 'custom');
+  document.getElementById('searchDateFrom').value = searchState.dateFrom;
+  document.getElementById('searchDateTo').value = searchState.dateTo;
+  renderSearchResults();
+}
+function renderSearchResults() {
+  var activeTrip = getActiveTrip();
+  var pool = searchState.scope === 'all' ? appData.expenses : appData.expenses.filter(function (e) { return e.tripId === activeTrip.id; });
+  var q = searchState.query.trim().toLowerCase();
+  var results = pool.filter(function (e) {
+    var catIds = Object.keys(searchState.categories).filter(function (k) { return searchState.categories[k]; });
+    if (catIds.length > 0 && !searchState.categories[e.category]) return false;
+    if (searchState.dateFrom && e.date < searchState.dateFrom) return false;
+    if (searchState.dateTo && e.date > searchState.dateTo) return false;
+    if (q) {
+      var cat = findCategory(e.category);
+      var hay = (e.note + ' ' + cat.label).toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
     }
     return true;
   });
-  const { map: searchGroupMap, keys: searchDateKeys } = groupExpensesByDate(searchResultsList);
-  let resultsSummaryText = null;
-  if (searchResultsList.length > 0) {
-    if (searchScope === "current") {
-      const sum = searchResultsList.reduce((s, e) => s + Number(e.amount), 0);
-      resultsSummaryText = `${searchResultsList.length} 筆・${formatMoney(sum, activeTrip.currency)}`;
-    } else {
-      resultsSummaryText = `${searchResultsList.length} 筆`;
-    }
+  var grouped = groupExpensesByDate(results);
+  var countEl = document.getElementById('resultsCount');
+  if (results.length === 0) {
+    countEl.textContent = '沒有符合的紀錄';
+  } else if (searchState.scope === 'current') {
+    var sum = results.reduce(function (s, e) { return s + Number(e.amount); }, 0);
+    countEl.textContent = results.length + ' 筆・' + formatMoney(sum, activeTrip.currency);
+  } else {
+    countEl.textContent = results.length + ' 筆';
   }
+  var tripCurrencyMap = {}, tripNameMap = {};
+  appData.trips.forEach(function (t) { tripCurrencyMap[t.id] = t.currency; tripNameMap[t.id] = t.name; });
 
-  function openAddTripModal() {
-    setEditingTripId(null);
-    setNewTripName("");
-    setNewTripCurrency("TWD");
-    setNewTripBudget("");
-    setNewTripExchangeRate("");
-    setShowAddTrip(true);
+  var box = document.getElementById('searchResultsBox');
+  if (grouped.keys.length === 0) {
+    box.innerHTML = '<div class="empty-state">' + icon('search', 26, '#4A4F55') + '<div class="empty-text">找不到符合條件的紀錄</div><div class="empty-sub">試試調整關鍵字或時間範圍</div></div>';
+    return;
   }
-
-  function openEditTripModal(trip) {
-    setEditingTripId(trip.id);
-    setNewTripName(trip.name);
-    setNewTripCurrency(trip.currency);
-    setNewTripBudget(trip.budget ? String(trip.budget) : "");
-    setNewTripExchangeRate(trip.exchangeRate ? String(trip.exchangeRate) : "");
-    setShowAddTrip(true);
-  }
-
-  function closeTripModal() {
-    setShowAddTrip(false);
-    setEditingTripId(null);
-  }
-
-  function saveTrip() {
-    const name = newTripName.trim();
-    if (!name) return;
-    const b = parseFloat(newTripBudget) || 0;
-    const rate = parseFloat(newTripExchangeRate) || 0;
-    if (editingTripId) {
-      updateData((prev) => ({
-        ...prev,
-        trips: prev.trips.map((t) => (t.id === editingTripId ? { ...t, name, budget: b, exchangeRate: rate } : t)),
-      }));
-    } else {
-      const trip = { id: uid(), name, currency: newTripCurrency, budget: b, exchangeRate: rate, createdAt: Date.now() };
-      updateData((prev) => ({ ...prev, trips: [...prev.trips, trip] }));
-      setActiveTripId(trip.id);
-    }
-    closeTripModal();
-  }
-
-  function deleteTrip() {
-    if (data.trips.length <= 1) return;
-    const remaining = data.trips.filter((t) => t.id !== activeTrip.id);
-    updateData((prev) => ({
-      trips: remaining,
-      expenses: prev.expenses.filter((e) => e.tripId !== activeTrip.id),
-    }));
-    setActiveTripId(remaining[0]?.id || null);
-    setConfirmDeleteTrip(false);
-  }
-
-  function addExpense() {
-    const amt = parseFloat(formAmount);
-    if (!amt || amt <= 0 || !activeTrip) return;
-    const expense = {
-      id: uid(),
-      tripId: activeTrip.id,
-      amount: amt,
-      category: formCategory,
-      note: formNote.trim(),
-      date: formDate,
-      createdAt: Date.now(),
-    };
-    updateData((prev) => ({ ...prev, expenses: [...prev.expenses, expense] }));
-    setFormAmount("");
-    setFormNote("");
-    setFormCategory("food");
-    setFormDate(todayLocal());
-    setShowAddExpense(false);
-  }
-
-  function deleteExpense(id) {
-    updateData((prev) => ({ ...prev, expenses: prev.expenses.filter((e) => e.id !== id) }));
-    setConfirmDeleteExpense(null);
-  }
-
-  function applyPreset(preset) {
-    setSearchPreset(preset);
-    if (preset === "all") {
-      setSearchDateFrom("");
-      setSearchDateTo("");
-    } else if (preset !== "custom") {
-      const range = getRangeForPreset(preset);
-      setSearchDateFrom(range.from);
-      setSearchDateTo(range.to);
-    }
-  }
-
-  function toggleSearchCategory(id) {
-    setSearchCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  var html = '';
+  grouped.keys.forEach(function (dateKey) {
+    html += '<div style="margin-bottom:16px;"><div class="date-header"><span>' + formatDateLabel(dateKey) + '</span></div>';
+    grouped.map[dateKey].forEach(function (e) {
+      html += renderExpenseRow(e, tripCurrencyMap[e.tripId], { tripName: searchState.scope === 'all' ? tripNameMap[e.tripId] : undefined });
     });
-  }
-
-  function clearSearchFilters() {
-    setSearchQuery("");
-    setSearchPreset("all");
-    setSearchDateFrom("");
-    setSearchDateTo("");
-    setSearchScope("current");
-    setSearchCategories(new Set());
-  }
-
-  function buildSummaryText() {
-    const lines = [];
-    lines.push(`${activeTrip.name} 支出總結`);
-    lines.push(`總額：${formatMoney(total, activeTrip.currency)}${hasBudget ? `／預算 ${formatMoney(budget, activeTrip.currency)}` : ""}`);
-    if (showConversion) lines.push(`約合台幣：${formatMoney(total * exchangeRate, "TWD")}`);
-    if (categoryTotals.length > 0) {
-      lines.push("——");
-      categoryTotals.forEach((c) => {
-        const pct = total > 0 ? Math.round((c.total / total) * 100) : 0;
-        lines.push(`${c.label}：${formatMoney(c.total, activeTrip.currency)}（${pct}%）`);
-      });
-    }
-    if (dateKeys.length > 0) {
-      lines.push("——");
-      [...dateKeys].reverse().forEach((d) => {
-        const sum = groupsMap[d].reduce((s, e) => s + Number(e.amount), 0);
-        lines.push(`${formatDateLabel(d)}：${formatMoney(sum, activeTrip.currency)}`);
-      });
-    }
-    return lines.join("\n");
-  }
-
-  async function handleShare() {
-    const text = buildSummaryText();
-    try {
-      await navigator.clipboard.writeText(text);
-      setShareToast("ok");
-    } catch (e) {
-      setShareToast("error");
-    }
-    setTimeout(() => setShareToast(false), 2000);
-  }
-
-  function renderExpenseRow(e, opts = {}) {
-    const cat = CATEGORIES.find((c) => c.id === e.category) || CATEGORIES[5];
-    const Icon = cat.icon;
-    const isConfirming = confirmDeleteExpense === e.id;
-    const currency = opts.currency || activeTrip.currency;
-    const subParts = [];
-    if (opts.tripName) subParts.push(opts.tripName);
-    if (e.note) subParts.push(cat.label);
-    const subText = subParts.join(" · ");
-
-    return (
-      <div key={e.id} style={styles.expenseRow}>
-        {isConfirming ? (
-          <div style={styles.rowConfirmWrap}>
-            <span style={styles.confirmText}>刪除這筆紀錄?</span>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="lg-press" style={styles.confirmDangerBtn} onClick={() => deleteExpense(e.id)}>刪除</button>
-              <button className="lg-press" style={styles.confirmCancelBtn} onClick={() => setConfirmDeleteExpense(null)}>取消</button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div style={{ ...styles.categoryIconBox, backgroundColor: cat.color + "22" }}>
-              <Icon size={18} color={cat.color} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={styles.expenseNote}>{e.note || cat.label}</div>
-              {subText && <div style={styles.expenseCatLabel}>{subText}</div>}
-            </div>
-            <div style={styles.expenseAmount}>{formatMoney(e.amount, currency)}</div>
-            <button
-              className="lg-press"
-              style={styles.rowDeleteBtn}
-              onClick={() => setConfirmDeleteExpense(e.id)}
-              aria-label="刪除"
-            >
-              <IconTrash size={15} color="#6B7076" />
-            </button>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div style={styles.page}>
-      <style>{GLOBAL_CSS}</style>
-
-      {shareToast && (
-        <div style={styles.toast}>{shareToast === "error" ? "複製失敗，請手動複製" : "已複製到剪貼簿 ✓"}</div>
-      )}
-
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <div style={styles.headerLeft}>
-            <div style={styles.logoBox}>
-              <IconWallet size={20} color="#0B0D10" />
-            </div>
-            <span style={styles.headerTitle}>旅費帳</span>
-          </div>
-          <button className="lg-press" style={styles.searchBtn} onClick={() => setShowSearch(true)} aria-label="搜尋">
-            <IconSearch size={18} color="#D4AF37" />
-          </button>
-        </div>
-
-        {saveError && (
-          <div style={styles.errorBanner}>
-            <IconAlert size={16} color="#E5484D" />
-            <span>尚未同步儲存，請檢查瀏覽器儲存空間</span>
-          </div>
-        )}
-
-        <div className="lg-tabs" style={styles.tabsRow}>
-          {data.trips.map((t) => (
-            <button
-              key={t.id}
-              className="lg-press"
-              onClick={() => setActiveTripId(t.id)}
-              style={{
-                ...styles.tripTag,
-                ...(t.id === activeTrip?.id ? styles.tripTagActive : {}),
-              }}
-            >
-              <span style={styles.tripTagHole} />
-              <span style={styles.tripTagName}>{t.name}</span>
-              <span style={styles.tripTagCurrency}>{t.currency}</span>
-            </button>
-          ))}
-          <button className="lg-press" style={styles.addTripBtn} onClick={openAddTripModal}>
-            <IconPlus size={18} color="#D4AF37" />
-          </button>
-        </div>
-
-        {activeTrip && (
-          <div key={activeTrip.id} style={{ animation: "ledgerFadeIn .25s ease-out" }}>
-            <div style={styles.summaryCard}>
-              <div style={styles.summaryGlow} />
-              <div style={styles.summaryTop}>
-                <div>
-                  <div style={styles.summaryTripName}>{activeTrip.name}</div>
-                  <div style={styles.summaryEyebrow}>支出總額</div>
-                  <div style={styles.summaryTotal}>{formatMoney(total, activeTrip.currency)}</div>
-                  {showConversion && (
-                    <div style={styles.summaryConvert}>≈ {formatMoney(total * exchangeRate, "TWD")}</div>
-                  )}
-                  <div style={styles.summarySub}>{tripExpenses.length} 筆紀錄</div>
-                </div>
-                <div style={{ display: "flex", gap: 6, position: "relative" }}>
-                  <button className="lg-press" style={styles.iconSmallBtn} onClick={() => openEditTripModal(activeTrip)} aria-label="編輯行程">
-                    <IconEdit size={14} color="#6B7076" />
-                  </button>
-                  <button className="lg-press" style={styles.iconSmallBtn} onClick={handleShare} aria-label="複製摘要">
-                    <IconCopy size={14} color="#6B7076" />
-                  </button>
-                  <button className="lg-press" style={styles.iconSmallBtn} onClick={() => setConfirmDeleteTrip(true)} aria-label="刪除行程">
-                    <IconTrash size={14} color="#6B7076" />
-                  </button>
-                </div>
-              </div>
-
-              {hasBudget && (
-                <div style={styles.budgetBlock}>
-                  <div style={styles.budgetRow}>
-                    <span style={styles.budgetLabel}>預算 {formatMoney(budget, activeTrip.currency)}</span>
-                    <span style={{ ...styles.budgetPct, color: budgetColor }}>{budgetPct}%</span>
-                  </div>
-                  <div style={styles.barTrack}>
-                    <div style={{ ...styles.barFill, width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetColor }} />
-                  </div>
-                  {budgetPct >= 100 && (
-                    <div style={styles.budgetOverText}>超出預算 {formatMoney(total - budget, activeTrip.currency)}</div>
-                  )}
-                </div>
-              )}
-
-              {confirmDeleteTrip && (
-                <div style={styles.confirmRow}>
-                  <span style={styles.confirmText}>
-                    {data.trips.length <= 1 ? "至少要保留一個行程" : `確定刪除「${activeTrip.name}」及其所有紀錄?`}
-                  </span>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {data.trips.length > 1 && (
-                      <button className="lg-press" style={styles.confirmDangerBtn} onClick={deleteTrip}>刪除</button>
-                    )}
-                    <button className="lg-press" style={styles.confirmCancelBtn} onClick={() => setConfirmDeleteTrip(false)}>取消</button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {categoryTotals.length > 0 && (
-              <div style={styles.card}>
-                <div style={styles.cardTitle}>分類統計</div>
-                {categoryTotals.map((c) => {
-                  const Icon = c.icon;
-                  const pct = total > 0 ? Math.round((c.total / total) * 100) : 0;
-                  return (
-                    <div key={c.id} style={styles.categoryRow}>
-                      <div style={{ ...styles.categoryIconBox, backgroundColor: c.color + "22" }}>
-                        <Icon size={16} color={c.color} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={styles.categoryRowTop}>
-                          <span style={styles.categoryName}>{c.label}</span>
-                          <span style={styles.categoryAmount}>{formatMoney(c.total, activeTrip.currency)}</span>
-                        </div>
-                        <div style={styles.barTrack}>
-                          <div style={{ ...styles.barFill, width: `${pct}%`, backgroundColor: c.color }} />
-                        </div>
-                      </div>
-                      <span style={styles.categoryPct}>{pct}%</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {trendDates.length > 1 && (
-              <div style={styles.card}>
-                <div style={styles.cardTitle}>花費趨勢</div>
-                <div className="lg-tabs" style={styles.trendScroll}>
-                  {trendDates.map((d) => {
-                    const sum = groupsMap[d].reduce((s, e) => s + Number(e.amount), 0);
-                    const h = Math.max(6, Math.round((sum / trendMax) * 90));
-                    return (
-                      <div key={d} style={styles.trendBarWrap}>
-                        <div style={styles.trendBarTrack}>
-                          <div style={{ ...styles.trendBar, height: `${h}px` }} />
-                        </div>
-                        <div style={styles.trendBarLabel}>{formatDateLabel(d).split(" ")[0]}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div style={styles.listSection}>
-              <div style={styles.cardTitle}>支出紀錄</div>
-              {dateKeys.length === 0 && (
-                <div style={styles.emptyState}>
-                  <IconCalendar size={28} color="#4A4F55" />
-                  <div style={styles.emptyText}>還沒有支出紀錄</div>
-                  <div style={styles.emptySub}>點右下角「＋」開始記帳</div>
-                </div>
-              )}
-              {dateKeys.map((dateKey) => {
-                const dayExpenses = groupsMap[dateKey];
-                const daySum = dayExpenses.reduce((s, e) => s + Number(e.amount), 0);
-                return (
-                  <div key={dateKey} style={{ marginBottom: 16 }}>
-                    <div style={styles.dateHeader}>
-                      <span>{formatDateLabel(dateKey)}</span>
-                      <span style={styles.dateHeaderSum}>{formatMoney(daySum, activeTrip.currency)}</span>
-                    </div>
-                    {dayExpenses.map((e) => renderExpenseRow(e))}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {activeTrip && (
-        <button className="lg-press" style={styles.fab} onClick={() => setShowAddExpense(true)} aria-label="新增支出">
-          <IconPlus size={26} color="#0B0D10" />
-        </button>
-      )}
-
-      {showAddExpense && (
-        <div style={styles.modalOverlay} onClick={() => setShowAddExpense(false)}>
-          <div style={styles.modalSheet} onClick={(ev) => ev.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <span style={styles.modalTitle}>新增支出</span>
-              <button className="lg-press" style={styles.modalClose} onClick={() => setShowAddExpense(false)}>
-                <IconX size={20} color="#9AA0A6" />
-              </button>
-            </div>
-
-            <div style={styles.amountInputWrap}>
-              <span style={styles.amountSymbol}>
-                {CURRENCIES.find((c) => c.code === activeTrip.currency)?.symbol}
-              </span>
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder="0"
-                value={formAmount}
-                onChange={(ev) => setFormAmount(ev.target.value)}
-                style={styles.amountInput}
-                autoFocus
-              />
-            </div>
-
-            <div style={styles.formLabel}>分類</div>
-            <div style={styles.categoryGrid}>
-              {CATEGORIES.map((c) => {
-                const Icon = c.icon;
-                const active = formCategory === c.id;
-                return (
-                  <button
-                    key={c.id}
-                    className="lg-press"
-                    onClick={() => setFormCategory(c.id)}
-                    style={{
-                      ...styles.categoryPick,
-                      borderColor: active ? c.color : "#2A2E33",
-                      backgroundColor: active ? c.color + "1A" : "#181B1F",
-                    }}
-                  >
-                    <Icon size={20} color={active ? c.color : "#9AA0A6"} />
-                    <span style={{ ...styles.categoryPickLabel, color: active ? "#F5F1E8" : "#9AA0A6" }}>
-                      {c.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div style={styles.formLabel}>備註（選填）</div>
-            <input
-              type="text"
-              className="lg-input"
-              placeholder="例如：午餐、伴手禮..."
-              value={formNote}
-              onChange={(ev) => setFormNote(ev.target.value)}
-              style={styles.textInput}
-            />
-
-            <div style={styles.formLabel}>日期</div>
-            <input
-              type="date"
-              className="lg-input"
-              value={formDate}
-              onChange={(ev) => setFormDate(ev.target.value)}
-              style={styles.textInput}
-            />
-
-            <button
-              className="lg-press"
-              style={{ ...styles.saveBtn, opacity: parseFloat(formAmount) > 0 ? 1 : 0.4 }}
-              onClick={addExpense}
-              disabled={!(parseFloat(formAmount) > 0)}
-            >
-              儲存
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showAddTrip && (
-        <div style={styles.modalOverlay} onClick={closeTripModal}>
-          <div style={styles.modalSheet} onClick={(ev) => ev.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <span style={styles.modalTitle}>{editingTripId ? "編輯行程" : "新增行程"}</span>
-              <button className="lg-press" style={styles.modalClose} onClick={closeTripModal}>
-                <IconX size={20} color="#9AA0A6" />
-              </button>
-            </div>
-
-            <div style={styles.formLabel}>行程名稱</div>
-            <input
-              type="text"
-              className="lg-input"
-              placeholder="例如：日本七日遊"
-              value={newTripName}
-              onChange={(ev) => setNewTripName(ev.target.value)}
-              style={styles.textInput}
-              autoFocus
-            />
-
-            <div style={styles.formLabel}>幣別</div>
-            {editingTripId ? (
-              <div style={styles.currencyReadonly}>
-                {CURRENCIES.find((c) => c.code === newTripCurrency)?.symbol} {CURRENCIES.find((c) => c.code === newTripCurrency)?.label}（建立後無法更改）
-              </div>
-            ) : (
-              <div style={styles.currencyRow}>
-                {CURRENCIES.map((c) => {
-                  const active = newTripCurrency === c.code;
-                  return (
-                    <button
-                      key={c.code}
-                      className="lg-press"
-                      onClick={() => setNewTripCurrency(c.code)}
-                      style={{
-                        ...styles.currencyPick,
-                        borderColor: active ? "#D4AF37" : "#2A2E33",
-                        backgroundColor: active ? "#D4AF3722" : "#181B1F",
-                        color: active ? "#F5F1E8" : "#9AA0A6",
-                      }}
-                    >
-                      {c.symbol} {c.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            <div style={styles.formLabel}>預算（選填）</div>
-            <input
-              type="number"
-              inputMode="decimal"
-              className="lg-input"
-              placeholder="例如 5000"
-              value={newTripBudget}
-              onChange={(ev) => setNewTripBudget(ev.target.value)}
-              style={styles.textInput}
-            />
-
-            {newTripCurrency !== "TWD" && (
-              <>
-                <div style={styles.formLabel}>{`匯率（選填，1 ${CURRENCIES.find((c) => c.code === newTripCurrency)?.symbol} ≈ 多少台幣）`}</div>
-                <input
-                  type="number"
-                  step="0.0001"
-                  inputMode="decimal"
-                  className="lg-input"
-                  placeholder="例如 0.21"
-                  value={newTripExchangeRate}
-                  onChange={(ev) => setNewTripExchangeRate(ev.target.value)}
-                  style={styles.textInput}
-                />
-              </>
-            )}
-
-            <button
-              className="lg-press"
-              style={{ ...styles.saveBtn, opacity: newTripName.trim() ? 1 : 0.4 }}
-              onClick={saveTrip}
-              disabled={!newTripName.trim()}
-            >
-              {editingTripId ? "儲存變更" : "建立行程"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showSearch && (
-        <div style={styles.modalOverlay} onClick={() => setShowSearch(false)}>
-          <div style={{ ...styles.modalSheet, maxHeight: "92vh" }} onClick={(ev) => ev.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <span style={styles.modalTitle}>搜尋支出</span>
-              <button className="lg-press" style={styles.modalClose} onClick={() => setShowSearch(false)}>
-                <IconX size={20} color="#9AA0A6" />
-              </button>
-            </div>
-
-            <div style={styles.searchInputWrap}>
-              <IconSearch size={18} color="#6B7076" />
-              <input
-                type="text"
-                className="lg-input"
-                placeholder="搜尋備註或分類..."
-                value={searchQuery}
-                onChange={(ev) => setSearchQuery(ev.target.value)}
-                style={styles.searchInput}
-                autoFocus
-              />
-            </div>
-
-            <div style={styles.formLabel}>時間範圍</div>
-            <div style={styles.presetRow}>
-              {[
-                { id: "all", label: "全部時間" },
-                { id: "today", label: "今天" },
-                { id: "week", label: "本週" },
-                { id: "month", label: "本月" },
-                { id: "custom", label: "自訂" },
-              ].map((p) => (
-                <button
-                  key={p.id}
-                  className="lg-press"
-                  onClick={() => applyPreset(p.id)}
-                  style={{
-                    ...styles.presetBtn,
-                    borderColor: searchPreset === p.id ? "#D4AF37" : "#2A2E33",
-                    backgroundColor: searchPreset === p.id ? "#D4AF3722" : "#181B1F",
-                    color: searchPreset === p.id ? "#F5F1E8" : "#9AA0A6",
-                  }}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-
-            {searchPreset === "custom" && (
-              <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-                <input
-                  type="date"
-                  className="lg-input"
-                  value={searchDateFrom}
-                  onChange={(ev) => setSearchDateFrom(ev.target.value)}
-                  style={{ ...styles.textInput, marginBottom: 0, flex: 1 }}
-                />
-                <input
-                  type="date"
-                  className="lg-input"
-                  value={searchDateTo}
-                  onChange={(ev) => setSearchDateTo(ev.target.value)}
-                  style={{ ...styles.textInput, marginBottom: 0, flex: 1 }}
-                />
-              </div>
-            )}
-
-            {data.trips.length > 1 && (
-              <>
-                <div style={styles.formLabel}>搜尋範圍</div>
-                <div style={styles.currencyRow}>
-                  {[
-                    { id: "current", label: `僅「${activeTrip.name}」` },
-                    { id: "all", label: "所有行程" },
-                  ].map((s) => (
-                    <button
-                      key={s.id}
-                      className="lg-press"
-                      onClick={() => setSearchScope(s.id)}
-                      style={{
-                        ...styles.currencyPick,
-                        borderColor: searchScope === s.id ? "#D4AF37" : "#2A2E33",
-                        backgroundColor: searchScope === s.id ? "#D4AF3722" : "#181B1F",
-                        color: searchScope === s.id ? "#F5F1E8" : "#9AA0A6",
-                      }}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            <div style={styles.formLabel}>分類</div>
-            <div style={styles.chipRow}>
-              {CATEGORIES.map((c) => {
-                const Icon = c.icon;
-                const active = searchCategories.has(c.id);
-                return (
-                  <button
-                    key={c.id}
-                    className="lg-press"
-                    onClick={() => toggleSearchCategory(c.id)}
-                    style={{
-                      ...styles.chip,
-                      borderColor: active ? c.color : "#2A2E33",
-                      backgroundColor: active ? c.color + "1A" : "#181B1F",
-                      color: active ? "#F5F1E8" : "#9AA0A6",
-                    }}
-                  >
-                    <Icon size={14} color={active ? c.color : "#9AA0A6"} />
-                    {c.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div style={styles.searchResultsHeader}>
-              <span style={styles.resultsCount}>{resultsSummaryText || "沒有符合的紀錄"}</span>
-              <button className="lg-press" style={styles.clearFiltersBtn} onClick={clearSearchFilters}>清除篩選</button>
-            </div>
-
-            <div style={{ marginTop: 4 }}>
-              {searchDateKeys.length === 0 && (
-                <div style={styles.emptyState}>
-                  <IconSearch size={26} color="#4A4F55" />
-                  <div style={styles.emptyText}>找不到符合條件的紀錄</div>
-                  <div style={styles.emptySub}>試試調整關鍵字或時間範圍</div>
-                </div>
-              )}
-              {searchDateKeys.map((dateKey) => {
-                const dayExpenses = searchGroupMap[dateKey];
-                return (
-                  <div key={dateKey} style={{ marginBottom: 16 }}>
-                    <div style={styles.dateHeader}>
-                      <span>{formatDateLabel(dateKey)}</span>
-                    </div>
-                    {dayExpenses.map((e) =>
-                      renderExpenseRow(e, {
-                        currency: tripCurrencyMap[e.tripId],
-                        tripName: searchScope === "all" ? tripNameMap[e.tripId] : undefined,
-                      })
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    html += '</div>';
+  });
+  box.innerHTML = html;
 }
 
-const styles = {
-  page: {
-    minHeight: "100vh",
-    backgroundColor: "#0B0D10",
-    backgroundImage: "radial-gradient(ellipse 800px 400px at 50% -10%, rgba(212,175,55,0.06), transparent)",
-    fontFamily: '"PingFang TC","Noto Sans TC",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif',
-    color: "#F5F1E8",
-    paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))",
-  },
-  loadingWrap: {
-    minHeight: "100vh",
-    backgroundColor: "#0B0D10",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  container: { maxWidth: 480, margin: "0 auto", padding: "20px 16px" },
-  header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
-  headerLeft: { display: "flex", alignItems: "center", gap: 10 },
-  logoBox: {
-    width: 34, height: 34, borderRadius: 9, backgroundColor: "#D4AF37",
-    display: "flex", alignItems: "center", justifyContent: "center",
-  },
-  headerTitle: { fontSize: 22, fontWeight: 700, letterSpacing: 0.5 },
-  searchBtn: {
-    width: 36, height: 36, borderRadius: 10, border: "1px solid #2A2E33", backgroundColor: "#14171C",
-    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-  },
-  errorBanner: {
-    display: "flex", alignItems: "center", gap: 8, backgroundColor: "#2A1416",
-    border: "1px solid #4A2226", borderRadius: 10, padding: "10px 12px",
-    fontSize: 14, color: "#E5989D", marginBottom: 14,
-  },
-  toast: {
-    position: "fixed", top: "calc(16px + env(safe-area-inset-top, 0px))", left: "50%", transform: "translateX(-50%)",
-    backgroundColor: "#1C1710", border: "1px solid #D4AF37", color: "#F5F1E8", padding: "10px 18px",
-    borderRadius: 999, fontSize: 14, fontWeight: 600, zIndex: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
-    animation: "ledgerFadeIn .2s ease-out",
-  },
-  tabsRow: { display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6, marginBottom: 18 },
-  tripTag: {
-    position: "relative", display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
-    padding: "10px 16px 10px 22px", borderRadius: 10, border: "1px solid #2A2E33",
-    backgroundColor: "#14171C", cursor: "pointer", fontFamily: "inherit",
-  },
-  tripTagActive: { border: "1px solid #D4AF37", backgroundColor: "#1C1710", boxShadow: "0 0 0 3px rgba(212,175,55,0.08)" },
-  tripTagHole: {
-    position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)",
-    width: 6, height: 6, borderRadius: "50%", backgroundColor: "#0B0D10", border: "1px solid #3A3F45",
-  },
-  tripTagName: { fontSize: 15, fontWeight: 600, whiteSpace: "nowrap" },
-  tripTagCurrency: {
-    fontSize: 12, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace', color: "#9AA0A6",
-    backgroundColor: "#0B0D10", padding: "2px 6px", borderRadius: 5,
-  },
-  addTripBtn: {
-    flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: "1px dashed #3A3F45",
-    backgroundColor: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-  },
-  summaryCard: {
-    position: "relative", overflow: "hidden",
-    backgroundColor: "#14171C", border: "1px solid #22262B", borderRadius: 16, padding: 20, marginBottom: 16,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-  },
-  summaryGlow: {
-    position: "absolute", top: -50, right: -50, width: 170, height: 170, borderRadius: "50%",
-    background: "radial-gradient(circle, rgba(212,175,55,0.35), transparent 70%)",
-    filter: "blur(18px)", pointerEvents: "none",
-  },
-  summaryTop: { position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
-  summaryTripName: { fontSize: 15, fontWeight: 600, color: "#C7CCD1", marginBottom: 8 },
-  summaryEyebrow: { fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#8A7434", marginBottom: 4 },
-  summaryTotal: {
-    fontSize: 40, fontWeight: 700, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace',
-    color: "#D4AF37", lineHeight: 1.1,
-  },
-  summaryConvert: { fontSize: 13, color: "#6B7076", marginTop: 4, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace' },
-  summarySub: { fontSize: 14, color: "#6B7076", marginTop: 6 },
-  iconSmallBtn: {
-    width: 32, height: 32, borderRadius: 8, border: "1px solid #2A2E33", backgroundColor: "transparent",
-    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0,
-  },
-  budgetBlock: { marginTop: 14, paddingTop: 14, borderTop: "1px dashed #2A2E33", position: "relative" },
-  budgetRow: { display: "flex", justifyContent: "space-between", marginBottom: 6 },
-  budgetLabel: { fontSize: 13, color: "#9AA0A6" },
-  budgetPct: { fontSize: 13, fontWeight: 700, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace' },
-  budgetOverText: { fontSize: 12, color: "#E5989D", marginTop: 6 },
-  confirmRow: {
-    marginTop: 14, paddingTop: 14, borderTop: "1px dashed #2A2E33",
-    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap",
-  },
-  confirmText: { fontSize: 14, color: "#C7CCD1" },
-  confirmDangerBtn: {
-    padding: "7px 14px", borderRadius: 8, border: "none", backgroundColor: "#E5484D",
-    color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer",
-  },
-  confirmCancelBtn: {
-    padding: "7px 14px", borderRadius: 8, border: "1px solid #2A2E33", backgroundColor: "transparent",
-    color: "#C7CCD1", fontSize: 14, cursor: "pointer",
-  },
-  card: {
-    backgroundColor: "#14171C", border: "1px solid #22262B", borderRadius: 16, padding: 18, marginBottom: 16,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-  },
-  cardTitle: { fontSize: 16, fontWeight: 700, marginBottom: 14, color: "#F5F1E8" },
-  categoryRow: { display: "flex", alignItems: "center", gap: 12, marginBottom: 14 },
-  categoryIconBox: {
-    width: 34, height: 34, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-  },
-  categoryRowTop: { display: "flex", justifyContent: "space-between", marginBottom: 5 },
-  categoryName: { fontSize: 15, fontWeight: 600 },
-  categoryAmount: { fontSize: 15, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace', color: "#C7CCD1" },
-  barTrack: { height: 6, borderRadius: 3, backgroundColor: "#22262B", overflow: "hidden" },
-  barFill: { height: "100%", borderRadius: 3, transition: "width .3s ease" },
-  categoryPct: { fontSize: 14, color: "#6B7076", width: 36, textAlign: "right", flexShrink: 0 },
-  trendScroll: { display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6, alignItems: "flex-end" },
-  trendBarWrap: { display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flexShrink: 0, width: 30 },
-  trendBarTrack: { height: 90, width: 16, display: "flex", alignItems: "flex-end", backgroundColor: "#1A1D22", borderRadius: 4, overflow: "hidden" },
-  trendBar: { width: "100%", backgroundColor: "#D4AF37", borderRadius: "4px 4px 0 0", transition: "height .3s ease" },
-  trendBarLabel: { fontSize: 11, color: "#6B7076", whiteSpace: "nowrap" },
-  listSection: { marginBottom: 8 },
-  dateHeader: {
-    display: "flex", justifyContent: "space-between", fontSize: 14, color: "#9AA0A6",
-    padding: "0 4px 8px", borderBottom: "1px dashed #22262B", marginBottom: 8,
-  },
-  dateHeaderSum: { fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace' },
-  expenseRow: {
-    display: "flex", alignItems: "center", gap: 12, backgroundColor: "#14171C",
-    border: "1px solid #22262B", borderRadius: 12, padding: 14, marginBottom: 8,
-  },
-  rowConfirmWrap: { display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 10, flexWrap: "wrap" },
-  expenseNote: { fontSize: 15, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  expenseCatLabel: { fontSize: 13, color: "#6B7076", marginTop: 2 },
-  expenseAmount: {
-    fontSize: 16, fontWeight: 700, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace', color: "#F5F1E8", flexShrink: 0,
-  },
-  rowDeleteBtn: {
-    width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent",
-    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0,
-  },
-  emptyState: { display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px", color: "#6B7076" },
-  emptyText: { fontSize: 16, fontWeight: 600, marginTop: 12, color: "#9AA0A6" },
-  emptySub: { fontSize: 14, marginTop: 4 },
-  fab: {
-    position: "fixed", right: 20, bottom: "calc(28px + env(safe-area-inset-bottom, 0px))", width: 58, height: 58, borderRadius: "50%",
-    backgroundColor: "#D4AF37", border: "none", display: "flex", alignItems: "center", justifyContent: "center",
-    boxShadow: "0 4px 16px rgba(212,175,55,0.4)", cursor: "pointer",
-  },
-  modalOverlay: {
-    position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)",
-    display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50,
-    animation: "ledgerFadeBackdrop .2s ease-out",
-  },
-  modalSheet: {
-    width: "100%", maxWidth: 480, backgroundColor: "#14171C", borderRadius: "20px 20px 0 0",
-    padding: "20px 20px calc(28px + env(safe-area-inset-bottom, 0px))", maxHeight: "88vh", overflowY: "auto",
-    animation: "ledgerSlideUp .25s ease-out",
-  },
-  modalHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
-  modalTitle: { fontSize: 18, fontWeight: 700 },
-  modalClose: { border: "none", backgroundColor: "transparent", cursor: "pointer", padding: 4 },
-  amountInputWrap: {
-    display: "flex", alignItems: "center", gap: 8, backgroundColor: "#0B0D10",
-    border: "1px solid #2A2E33", borderRadius: 12, padding: "14px 16px", marginBottom: 20,
-  },
-  amountSymbol: { fontSize: 24, color: "#9AA0A6", fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace' },
-  amountInput: {
-    flex: 1, fontSize: 30, fontWeight: 700, fontFamily: 'ui-monospace,"SF Mono",Menlo,monospace',
-    color: "#F5F1E8", backgroundColor: "transparent", border: "none", outline: "none",
-  },
-  formLabel: { fontSize: 14, color: "#9AA0A6", marginBottom: 8, marginTop: 4 },
-  categoryGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 },
-  categoryPick: {
-    display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 6px",
-    borderRadius: 12, border: "1px solid #2A2E33", cursor: "pointer", fontFamily: "inherit",
-  },
-  categoryPickLabel: { fontSize: 13, fontWeight: 600 },
-  textInput: {
-    width: "100%", fontSize: 16, padding: "12px 14px", borderRadius: 10, border: "1px solid #2A2E33",
-    backgroundColor: "#0B0D10", color: "#F5F1E8", marginBottom: 18, outline: "none",
-    boxSizing: "border-box", fontFamily: "inherit",
-  },
-  currencyRow: { display: "flex", gap: 10, marginBottom: 22 },
-  currencyPick: {
-    flex: 1, padding: "12px 8px", borderRadius: 10, border: "1px solid #2A2E33",
-    fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-  },
-  currencyReadonly: {
-    padding: "12px 14px", borderRadius: 10, border: "1px solid #22262B", backgroundColor: "#0B0D10",
-    color: "#9AA0A6", fontSize: 14, marginBottom: 22,
-  },
-  saveBtn: {
-    width: "100%", padding: "16px", borderRadius: 12, border: "none", backgroundColor: "#D4AF37",
-    color: "#0B0D10", fontSize: 16, fontWeight: 700, cursor: "pointer",
-  },
-  searchInputWrap: {
-    display: "flex", alignItems: "center", gap: 10, backgroundColor: "#0B0D10",
-    border: "1px solid #2A2E33", borderRadius: 12, padding: "12px 14px", marginBottom: 20,
-  },
-  searchInput: {
-    flex: 1, fontSize: 16, color: "#F5F1E8", backgroundColor: "transparent", border: "none", outline: "none", fontFamily: "inherit",
-  },
-  presetRow: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 },
-  presetBtn: {
-    padding: "8px 14px", borderRadius: 999, border: "1px solid #2A2E33",
-    fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-  },
-  chipRow: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 },
-  chip: {
-    display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 999,
-    border: "1px solid #2A2E33", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-  },
-  searchResultsHeader: {
-    display: "flex", justifyContent: "space-between", alignItems: "center",
-    paddingTop: 14, borderTop: "1px solid #22262B", marginBottom: 10,
-  },
-  resultsCount: { fontSize: 14, color: "#9AA0A6" },
-  clearFiltersBtn: {
-    border: "none", backgroundColor: "transparent", color: "#D4AF37", fontSize: 13, fontWeight: 600, cursor: "pointer",
-  },
-};
+/* ---------- share summary ---------- */
+function buildSummaryText() {
+  var activeTrip = getActiveTrip();
+  var tripExpenses = appData.expenses.filter(function (e) { return e.tripId === activeTrip.id; });
+  var total = tripExpenses.reduce(function (s, e) { return s + Number(e.amount); }, 0);
+  var budget = activeTrip.budget || 0;
+  var hasBudget = budget > 0;
+  var exchangeRate = activeTrip.exchangeRate || 0;
+  var showConversion = activeTrip.currency !== 'TWD' && exchangeRate > 0;
+  var categoryTotals = CATEGORIES.map(function (c) {
+    var t = tripExpenses.filter(function (e) { return e.category === c.id; }).reduce(function (s, e) { return s + Number(e.amount); }, 0);
+    return { label: c.label, total: t };
+  }).filter(function (c) { return c.total > 0; }).sort(function (a, b) { return b.total - a.total; });
+  var grouped = groupExpensesByDate(tripExpenses);
 
-ReactDOM.createRoot(document.getElementById("root")).render(<ExpenseTracker />);
+  var lines = [];
+  lines.push(activeTrip.name + ' 支出總結');
+  lines.push('總額：' + formatMoney(total, activeTrip.currency) + (hasBudget ? '／預算 ' + formatMoney(budget, activeTrip.currency) : ''));
+  if (showConversion) lines.push('約合台幣：' + formatMoney(total * exchangeRate, 'TWD'));
+  if (categoryTotals.length > 0) {
+    lines.push('——');
+    categoryTotals.forEach(function (c) {
+      var pct = total > 0 ? Math.round((c.total / total) * 100) : 0;
+      lines.push(c.label + '：' + formatMoney(c.total, activeTrip.currency) + '（' + pct + '%）');
+    });
+  }
+  if (grouped.keys.length > 0) {
+    lines.push('——');
+    grouped.keys.slice().reverse().forEach(function (d) {
+      var sum = grouped.map[d].reduce(function (s, e) { return s + Number(e.amount); }, 0);
+      lines.push(formatDateLabel(d) + '：' + formatMoney(sum, activeTrip.currency));
+    });
+  }
+  return lines.join('\n');
+}
+function doShareSummary() {
+  var text = buildSummaryText();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { showToast('ok'); }).catch(function () { showToast('error'); });
+  } else {
+    showToast('error');
+  }
+}
+var toastTimer = null;
+function showToast(kind) {
+  var el = document.getElementById('toast');
+  el.textContent = kind === 'error' ? '複製失敗，請手動複製' : '已複製到剪貼簿 ✓';
+  el.classList.remove('hidden');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { el.classList.add('hidden'); }, 2000);
+}
+
+/* ---------- modal close ---------- */
+function closeModal() {
+  document.getElementById('modalRoot').innerHTML = '';
+  modalOpen = null;
+}
+
+/* ---------- global click delegation ---------- */
+function handleGlobalClick(ev) {
+  var el = ev.target.closest ? ev.target.closest('[data-action]') : null;
+  if (!el) return;
+  var action = el.getAttribute('data-action');
+
+  if (action === 'select-trip') {
+    activeTripId = el.getAttribute('data-trip-id');
+    confirmDeleteTripFlag = false; confirmDeleteExpenseId = null;
+    renderApp();
+  } else if (action === 'open-search') {
+    openSearchModal();
+  } else if (action === 'open-add-trip') {
+    openTripModal(null);
+  } else if (action === 'open-edit-trip') {
+    openTripModal(el.getAttribute('data-trip-id'));
+  } else if (action === 'ask-delete-trip') {
+    confirmDeleteTripFlag = true; renderApp();
+  } else if (action === 'cancel-delete-trip') {
+    confirmDeleteTripFlag = false; renderApp();
+  } else if (action === 'confirm-delete-trip') {
+    doDeleteTrip();
+  } else if (action === 'share-summary') {
+    doShareSummary();
+  } else if (action === 'ask-delete-expense') {
+    confirmDeleteExpenseId = el.getAttribute('data-expense-id');
+    if (modalOpen === 'search') renderSearchResults(); else renderApp();
+  } else if (action === 'cancel-delete-expense') {
+    confirmDeleteExpenseId = null;
+    if (modalOpen === 'search') renderSearchResults(); else renderApp();
+  } else if (action === 'confirm-delete-expense') {
+    doDeleteExpense(el.getAttribute('data-expense-id'));
+  } else if (action === 'open-add-expense') {
+    openExpenseModal();
+  } else if (action === 'close-modal') {
+    closeModal();
+  } else if (action === 'pick-expense-category') {
+    currentExpenseCategory = el.getAttribute('data-cat');
+    refreshExpenseCategoryGrid();
+  } else if (action === 'save-expense') {
+    doSaveExpense();
+  } else if (action === 'pick-trip-currency') {
+    currentNewTripCurrency = el.getAttribute('data-code');
+    document.querySelectorAll('#tripCurrencyRow .currency-pick').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-code') === currentNewTripCurrency);
+    });
+    var wrap = document.getElementById('tripExchangeWrap');
+    if (currentNewTripCurrency === 'TWD') { wrap.classList.add('hidden'); }
+    else { wrap.classList.remove('hidden'); document.getElementById('tripExchangeLabel').textContent = exchangeLabelText(currentNewTripCurrency); }
+  } else if (action === 'save-trip') {
+    doSaveTrip();
+  } else if (action === 'pick-preset') {
+    applyPreset(el.getAttribute('data-preset'));
+  } else if (action === 'pick-scope') {
+    searchState.scope = el.getAttribute('data-scope');
+    document.querySelectorAll('#scopeRow .currency-pick').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-scope') === searchState.scope);
+    });
+    renderSearchResults();
+  } else if (action === 'toggle-search-cat') {
+    var cid = el.getAttribute('data-cat');
+    searchState.categories[cid] = !searchState.categories[cid];
+    el.classList.toggle('active', !!searchState.categories[cid]);
+    renderSearchResults();
+  } else if (action === 'clear-search-filters') {
+    searchState = { query: '', preset: 'all', dateFrom: '', dateTo: '', scope: 'current', categories: {} };
+    document.getElementById('searchQueryInput').value = '';
+    document.getElementById('searchDateFrom').value = '';
+    document.getElementById('searchDateTo').value = '';
+    document.getElementById('customDateRow').classList.add('hidden');
+    syncPresetButtons();
+    var scopeRow = document.getElementById('scopeRow');
+    if (scopeRow) scopeRow.querySelectorAll('.currency-pick').forEach(function (btn, i) { btn.classList.toggle('active', i === 0); });
+    document.querySelectorAll('#searchChipRow .chip').forEach(function (btn) { btn.classList.remove('active'); });
+    renderSearchResults();
+  }
+}
+
+/* ---------- init ---------- */
+function init() {
+  appData = loadData();
+  activeTripId = appData.trips.length ? appData.trips[0].id : null;
+  renderApp();
+  document.addEventListener('click', handleGlobalClick);
+  document.getElementById('modalRoot').addEventListener('click', function (ev) {
+    if (ev.target.classList.contains('modal-overlay')) closeModal();
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 </script>
 </body>
 </html>
