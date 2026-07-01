@@ -1,18 +1,170 @@
-import { useState, useEffect, useCallback } from "react";
-import {
-  Plus, X, Trash2, Wallet, Utensils, Car, BedDouble,
-  ShoppingBag, Ticket, MoreHorizontal, Calendar, AlertCircle
-} from "lucide-react";
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>旅費帳</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #0B0D10; }
+  * { box-sizing: border-box; }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+  // Polyfill Claude's artifact-only window.storage API using plain localStorage,
+  // so the rest of the app code doesn't need to change.
+  window.storage = {
+    async get(key) {
+      const v = localStorage.getItem(key);
+      if (v === null) return null;
+      return { key, value: v };
+    },
+    async set(key, value) {
+      localStorage.setItem(key, value);
+      return { key, value };
+    },
+    async delete(key) {
+      const existed = localStorage.getItem(key) !== null;
+      localStorage.removeItem(key);
+      return { key, deleted: existed };
+    },
+    async list(prefix) {
+      const keys = Object.keys(localStorage).filter((k) => !prefix || k.startsWith(prefix));
+      return { keys };
+    },
+  };
+</script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback } = React;
+
+/* ---------- Hand-drawn icon set (replaces lucide-react, no extra deps) ---------- */
+function IconPlus({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+function IconX({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+function IconTrash({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="4" y1="7" x2="20" y2="7" />
+      <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
+      <path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  );
+}
+function IconWallet({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v3" />
+      <path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-4a2 2 0 0 0 0 4h5" />
+    </svg>
+  );
+}
+function IconUtensils({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 2v6a2 2 0 0 0 2 2v12" />
+      <path d="M5 2v6M9 2v6" />
+      <path d="M17 2c-1.5 0-3 1.5-3 4v5c0 1 1 2 2 2v9" />
+    </svg>
+  );
+}
+function IconCar({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 13l2-6a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 6" />
+      <path d="M3 13h18v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4z" />
+      <circle cx="7.5" cy="17" r="1.5" />
+      <circle cx="16.5" cy="17" r="1.5" />
+    </svg>
+  );
+}
+function IconBed({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 18v-6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6" />
+      <path d="M2 18v2M22 18v2" />
+      <path d="M2 13V9a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v3" />
+      <path d="M13 13V9a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v3" />
+    </svg>
+  );
+}
+function IconBag({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8h12l1 12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L6 8z" />
+      <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+    </svg>
+  );
+}
+function IconTicket({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8z" />
+      <line x1="10" y1="6" x2="10" y2="18" strokeDasharray="2 2" />
+    </svg>
+  );
+}
+function IconMore({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <circle cx="5" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="19" cy="12" r="1.8" />
+    </svg>
+  );
+}
+function IconCalendar({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+      <line x1="8" y1="3" x2="8" y2="7" />
+      <line x1="16" y1="3" x2="16" y2="7" />
+    </svg>
+  );
+}
+function IconAlert({ size = 20, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <line x1="12" y1="8" x2="12" y2="13" />
+      <line x1="12" y1="16" x2="12" y2="16.01" />
+    </svg>
+  );
+}
 
 const STORAGE_KEY = "travel-ledger-data";
 
 const CATEGORIES = [
-  { id: "food", label: "飲食", icon: Utensils, color: "#D4AF37" },
-  { id: "transport", label: "交通", icon: Car, color: "#4FD1C5" },
-  { id: "stay", label: "住宿", icon: BedDouble, color: "#9B7EDE" },
-  { id: "shopping", label: "購物", icon: ShoppingBag, color: "#E08585" },
-  { id: "fun", label: "娛樂", icon: Ticket, color: "#6FCF97" },
-  { id: "other", label: "其他", icon: MoreHorizontal, color: "#8A8F98" },
+  { id: "food", label: "飲食", icon: IconUtensils, color: "#D4AF37" },
+  { id: "transport", label: "交通", icon: IconCar, color: "#4FD1C5" },
+  { id: "stay", label: "住宿", icon: IconBed, color: "#9B7EDE" },
+  { id: "shopping", label: "購物", icon: IconBag, color: "#E08585" },
+  { id: "fun", label: "娛樂", icon: IconTicket, color: "#6FCF97" },
+  { id: "other", label: "其他", icon: IconMore, color: "#8A8F98" },
 ];
 
 const CURRENCIES = [
@@ -54,7 +206,7 @@ const defaultData = () => ({
   expenses: [],
 });
 
-export default function ExpenseTracker() {
+function ExpenseTracker() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saveError, setSaveError] = useState(false);
@@ -115,7 +267,7 @@ export default function ExpenseTracker() {
   if (loading || !data) {
     return (
       <div style={styles.loadingWrap}>
-        <Wallet size={32} color="#D4AF37" />
+        <IconWallet size={32} color="#D4AF37" />
         <div style={{ marginTop: 12, color: "#9AA0A6", fontSize: 16 }}>載入中...</div>
       </div>
     );
@@ -193,7 +345,7 @@ export default function ExpenseTracker() {
         <div style={styles.header}>
           <div style={styles.headerLeft}>
             <div style={styles.logoBox}>
-              <Wallet size={20} color="#0B0D10" />
+              <IconWallet size={20} color="#0B0D10" />
             </div>
             <span style={styles.headerTitle}>旅費帳</span>
           </div>
@@ -201,8 +353,8 @@ export default function ExpenseTracker() {
 
         {saveError && (
           <div style={styles.errorBanner}>
-            <AlertCircle size={16} color="#E5484D" />
-            <span>尚未同步儲存，請檢查網路</span>
+            <IconAlert size={16} color="#E5484D" />
+            <span>尚未同步儲存，請檢查瀏覽器儲存空間</span>
           </div>
         )}
 
@@ -222,7 +374,7 @@ export default function ExpenseTracker() {
             </button>
           ))}
           <button style={styles.addTripBtn} onClick={() => setShowAddTrip(true)}>
-            <Plus size={18} color="#D4AF37" />
+            <IconPlus size={18} color="#D4AF37" />
           </button>
         </div>
 
@@ -240,7 +392,7 @@ export default function ExpenseTracker() {
                   onClick={() => setConfirmDeleteTrip(true)}
                   aria-label="刪除行程"
                 >
-                  <Trash2 size={16} color="#6B7076" />
+                  <IconTrash size={16} color="#6B7076" />
                 </button>
               </div>
 
@@ -290,7 +442,7 @@ export default function ExpenseTracker() {
               <div style={styles.cardTitle}>支出紀錄</div>
               {dateKeys.length === 0 && (
                 <div style={styles.emptyState}>
-                  <Calendar size={28} color="#4A4F55" />
+                  <IconCalendar size={28} color="#4A4F55" />
                   <div style={styles.emptyText}>還沒有支出紀錄</div>
                   <div style={styles.emptySub}>點右下角「＋」開始記帳</div>
                 </div>
@@ -333,7 +485,7 @@ export default function ExpenseTracker() {
                                 onClick={() => setConfirmDeleteExpense(e.id)}
                                 aria-label="刪除"
                               >
-                                <Trash2 size={15} color="#6B7076" />
+                                <IconTrash size={15} color="#6B7076" />
                               </button>
                             </>
                           )}
@@ -350,7 +502,7 @@ export default function ExpenseTracker() {
 
       {activeTrip && (
         <button style={styles.fab} onClick={() => setShowAddExpense(true)} aria-label="新增支出">
-          <Plus size={26} color="#0B0D10" />
+          <IconPlus size={26} color="#0B0D10" />
         </button>
       )}
 
@@ -360,7 +512,7 @@ export default function ExpenseTracker() {
             <div style={styles.modalHeader}>
               <span style={styles.modalTitle}>新增支出</span>
               <button style={styles.modalClose} onClick={() => setShowAddExpense(false)}>
-                <X size={20} color="#9AA0A6" />
+                <IconX size={20} color="#9AA0A6" />
               </button>
             </div>
 
@@ -437,7 +589,7 @@ export default function ExpenseTracker() {
             <div style={styles.modalHeader}>
               <span style={styles.modalTitle}>新增行程</span>
               <button style={styles.modalClose} onClick={() => setShowAddTrip(false)}>
-                <X size={20} color="#9AA0A6" />
+                <IconX size={20} color="#9AA0A6" />
               </button>
             </div>
 
@@ -642,3 +794,8 @@ const styles = {
     color: "#0B0D10", fontSize: 16, fontWeight: 700, cursor: "pointer",
   },
 };
+
+ReactDOM.createRoot(document.getElementById("root")).render(<ExpenseTracker />);
+</script>
+</body>
+</html>
