@@ -110,6 +110,8 @@
   .date-header { display: flex; justify-content: space-between; font-size: 14px; color: #9AA0A6; padding: 0 4px 10px; border-bottom: 1px dashed #22262B; margin-bottom: 12px; }
   .date-header-sum { font-family: ui-monospace,"SF Mono",Menlo,monospace; }
   .expense-row { display: flex; align-items: center; gap: 12px; background: #14171C; border: 1px solid #22262B; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+  .expense-content { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; background: transparent; border: none; padding: 0; margin: 0; text-align: left; cursor: pointer; font-family: inherit; }
+  .expense-content:active { opacity: 0.7; }
   .row-confirm-wrap { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; flex-wrap: wrap; }
   .expense-note { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .expense-cat-label { font-size: 13px; color: #6B7076; margin-top: 2px; }
@@ -211,6 +213,12 @@ var CURRENCIES = [
   { code: 'USD', symbol: '$', label: '美金' }
 ];
 
+var PAY_METHODS = [
+  { id: 'cash', label: '現金', icon: 'cash' },
+  { id: 'card', label: '刷卡', icon: 'card' }
+];
+var DEFAULT_PAY = 'cash';
+
 var WEEKDAYS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 
 /* ---------- Firebase init (safe: never throws, falls back to a clear message) ---------- */
@@ -241,6 +249,7 @@ function icon(name, size, color) {
     bag: '<path d="M6 8h12l1 12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
     ticket: '<path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8z"/><line x1="10" y1="6" x2="10" y2="18" stroke-dasharray="2 2"/>',
     card: '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>',
+    cash: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/>',
     more: '<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/>',
     alert: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16.01"/>',
@@ -343,9 +352,12 @@ var modalOpen = null;
 var nameGateActive = false;
 var currentExpenseCategory = 'food';
 var currentExpenseTargetId = null;
+var editingExpenseId = null;
+var currentPayMethod = 'cash';
+var currentTemplateId = null;
 var editingTripId = null;
 var currentNewTripCurrency = 'TWD';
-var searchState = { query: '', preset: 'all', dateFrom: '', dateTo: '', scope: 'current', categories: {} };
+var searchState = { query: '', preset: 'all', dateFrom: '', dateTo: '', scope: 'current', categories: {}, payMethods: {} };
 var templatesCache = [];
 var unsubTrips = null;
 var unsubExpenses = null;
@@ -424,7 +436,7 @@ function renderApp() {
   var isDaily = activeTrip.id === DAILY_ID;
   var isArchived = !!activeTrip.archived;
 
-  fab.classList.toggle('hidden', isArchived);
+  fab.classList.remove('hidden');
   fab.innerHTML = icon('plus', 26, '#0B0D10');
 
   var allTripExpenses = appData.expenses.filter(function (e) { return e.tripId === activeTrip.id; });
@@ -485,9 +497,9 @@ function renderApp() {
     html += '</div>';
 
     if (currentMonth === todayLocal().slice(0, 7) && templatesCache.length > 0) {
-      var recordedNames = {};
-      allTripExpenses.filter(function (e) { return e.date.slice(0, 7) === currentMonth; }).forEach(function (e) { if (e.note) recordedNames[e.note] = true; });
-      var missing = templatesCache.filter(function (t) { return !recordedNames[t.name]; });
+      var recordedTemplateIds = {};
+      allTripExpenses.filter(function (e) { return e.date.slice(0, 7) === currentMonth; }).forEach(function (e) { if (e.fromTemplate) recordedTemplateIds[e.fromTemplate] = true; });
+      var missing = templatesCache.filter(function (t) { return !recordedTemplateIds[t.id]; });
       if (missing.length > 0) {
         html += '<div class="bill-reminder"><div class="bill-reminder-text">💳 本月還有 ' + missing.length + ' 筆固定支出未記：</div><div class="bill-reminder-chips">';
         missing.forEach(function (t) {
@@ -507,10 +519,12 @@ function renderApp() {
   if (showConversion) html += '<div class="summary-convert">≈ ' + formatMoney(total * exchangeRate, 'TWD') + '</div>';
   html += '<div class="summary-sub">' + tripExpenses.length + ' 筆紀錄</div></div>';
   html += '<div class="summary-actions">';
+  html += '<button class="icon-btn-sm press" data-action="search-this-trip" aria-label="搜尋此帳本">' + icon('search', 14, '#6B7076') + '</button>';
   if (isDaily) {
     html += '<button class="icon-btn-sm press" data-action="open-edit-trip" data-trip-id="' + activeTrip.id + '" aria-label="編輯">' + icon('edit', 14, '#6B7076') + '</button>';
     html += '<button class="icon-btn-sm press" data-action="share-summary" aria-label="複製摘要">' + icon('copy', 14, '#6B7076') + '</button>';
   } else if (isArchived) {
+    html += '<button class="icon-btn-sm press" data-action="open-edit-trip" data-trip-id="' + activeTrip.id + '" aria-label="編輯行程">' + icon('edit', 14, '#6B7076') + '</button>';
     html += '<button class="icon-btn-sm press" data-action="share-summary" aria-label="複製摘要">' + icon('copy', 14, '#6B7076') + '</button>';
     html += '<button class="icon-btn-sm press" data-action="restore-trip" data-trip-id="' + activeTrip.id + '" aria-label="取消封存">' + icon('restore', 14, '#6B7076') + '</button>';
   } else {
@@ -547,6 +561,25 @@ function renderApp() {
     html += '</div>';
   }
 
+  var payTotals = PAY_METHODS.map(function (p) {
+    var t = tripExpenses.filter(function (e) { return (e.payMethod || 'cash') === p.id; }).reduce(function (s, e) { return s + Number(e.amount); }, 0);
+    return { id: p.id, label: p.label, icon: p.icon, total: t };
+  }).filter(function (p) { return p.total > 0; });
+
+  if (payTotals.length > 0) {
+    var payColorMap = { cash: '#6FCF97', card: '#5B8DEF' };
+    html += '<div class="card"><div class="card-title">付款方式</div>';
+    payTotals.forEach(function (p) {
+      var pct = total > 0 ? Math.round((p.total / total) * 100) : 0;
+      var color = payColorMap[p.id] || '#8A8F98';
+      html += '<div class="category-row"><div class="category-icon-box" style="background-color:' + color + '22">' + icon(p.icon, 16, color) + '</div>';
+      html += '<div style="flex:1;min-width:0;"><div class="category-row-top"><span class="category-name">' + p.label + '</span><span class="category-amount">' + formatMoney(p.total, activeTrip.currency) + '</span></div>';
+      html += '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background-color:' + color + '"></div></div></div>';
+      html += '<span class="category-pct">' + pct + '%</span></div>';
+    });
+    html += '</div>';
+  }
+
   if (trendDates.length > 1) {
     html += '<div class="card"><div class="card-title">花費趨勢</div><div class="trend-scroll">';
     trendDates.forEach(function (d) {
@@ -560,7 +593,7 @@ function renderApp() {
 
   html += '<div><div class="card-title">支出紀錄</div>';
   if (dateKeys.length === 0) {
-    html += '<div class="empty-state">' + icon('calendar', 28, '#4A4F55') + '<div class="empty-text">還沒有支出紀錄</div>' + (isArchived ? '' : '<div class="empty-sub">點右下角「＋」開始記帳</div>') + '</div>';
+    html += '<div class="empty-state">' + icon('calendar', 28, '#4A4F55') + '<div class="empty-text">還沒有支出紀錄</div><div class="empty-sub">點右下角「＋」開始記帳</div></div>';
   } else {
     dateKeys.forEach(function (dateKey) {
       var dayExpenses = groupsMap[dateKey];
@@ -586,25 +619,49 @@ function renderExpenseRow(e, currency, opts) {
       '<button class="btn-danger press" data-action="confirm-delete-expense" data-expense-id="' + e.id + '">刪除</button>' +
       '<button class="btn-cancel press" data-action="cancel-delete-expense">取消</button></div></div></div>';
   }
+  var payLabel = (e.payMethod || 'cash') === 'card' ? '刷卡' : '現金';
   var subParts = [];
   if (opts.tripName) subParts.push(escapeHtml(opts.tripName));
   if (e.addedBy) subParts.push(escapeHtml(e.addedBy));
   if (e.note) subParts.push(cat.label);
+  subParts.push(payLabel);
+  if (e.editedBy) subParts.push(escapeHtml(e.editedBy) + ' 修改');
   var subText = subParts.join(' · ');
-  var html = '<div class="expense-row"><div class="category-icon-box" style="background-color:' + cat.color + '22">' + icon(cat.icon, 18, cat.color) + '</div>';
+  var html = '<div class="expense-row">';
+  html += '<div class="expense-content press" role="button" tabindex="0" data-action="edit-expense" data-expense-id="' + e.id + '">';
+  html += '<div class="category-icon-box" style="background-color:' + cat.color + '22">' + icon(cat.icon, 18, cat.color) + '</div>';
   html += '<div style="flex:1;min-width:0;"><div class="expense-note">' + escapeHtml(e.note || cat.label) + '</div>';
   if (subText) html += '<div class="expense-cat-label">' + subText + '</div>';
   html += '</div><div class="expense-amount">' + formatMoney(e.amount, currency) + '</div>';
-  html += '<button class="row-delete-btn press" data-action="ask-delete-expense" data-expense-id="' + e.id + '" aria-label="刪除">' + icon('trash', 15, '#6B7076') + '</button></div>';
+  html += '</div>';
+  html += '<button class="row-delete-btn press" data-action="ask-delete-expense" data-expense-id="' + e.id + '" aria-label="刪除">' + icon('trash', 15, '#6B7076') + '</button>';
+  html += '</div>';
   return html;
 }
 
 /* ---------- expense modal ---------- */
-function openExpenseModal(prefillTemplate) {
-  currentExpenseCategory = prefillTemplate ? (prefillTemplate.category || 'bill') : 'food';
-  currentExpenseTargetId = prefillTemplate ? DAILY_ID : activeTripId;
+function openExpenseModal(opts) {
+  opts = opts || {};
+  var editExpense = opts.editExpense || null;
+  var template = opts.template || null;
+  editingExpenseId = editExpense ? editExpense.id : null;
+  currentTemplateId = template ? template.id : null;
+
+  var lockedTargetId = null;
+  if (editExpense) {
+    lockedTargetId = editExpense.tripId;
+  } else {
+    var at0 = getActiveTrip();
+    if (at0 && at0.archived) lockedTargetId = at0.id;
+  }
+
+  currentExpenseCategory = editExpense ? editExpense.category : (template ? (template.category || 'bill') : 'food');
+  currentPayMethod = editExpense ? (editExpense.payMethod || 'cash') : DEFAULT_PAY;
+  currentExpenseTargetId = editExpense ? editExpense.tripId : (template ? DAILY_ID : (lockedTargetId || activeTripId));
+
   var targetTrip = appData.trips.filter(function (t) { return t.id === currentExpenseTargetId; })[0] || getActiveTrip();
   var symbol = findCurrency(targetTrip.currency).symbol;
+  var isLockedTarget = !!editExpense || !!lockedTargetId;
   var ledgerOptions = appData.trips.filter(function (t) { return !t.archived; }).sort(function (a, b) {
     if (a.id === DAILY_ID) return -1;
     if (b.id === DAILY_ID) return 1;
@@ -612,18 +669,30 @@ function openExpenseModal(prefillTemplate) {
   });
 
   var html = '<div class="modal-overlay"><div class="modal-sheet">';
-  html += '<div class="modal-header"><span class="modal-title">新增支出</span><button class="modal-close" data-action="close-modal">' + icon('x', 20, '#9AA0A6') + '</button></div>';
-  html += '<div class="form-label">記到哪本</div><div class="ledger-chip-row" id="expenseLedgerRow">';
-  ledgerOptions.forEach(function (t) {
-    var active = t.id === currentExpenseTargetId;
-    html += '<button class="chip press' + (active ? ' active' : '') + '" data-action="pick-expense-ledger" data-ledger-id="' + t.id + '">' + escapeHtml(t.name) + '</button>';
+  html += '<div class="modal-header"><span class="modal-title">' + (editExpense ? '編輯支出' : '新增支出') + '</span><button class="modal-close" data-action="close-modal">' + icon('x', 20, '#9AA0A6') + '</button></div>';
+  if (isLockedTarget) {
+    html += '<div class="form-label">記在</div><div class="currency-readonly">' + escapeHtml(targetTrip.name) + '</div>';
+  } else {
+    html += '<div class="form-label">記到哪本</div><div class="ledger-chip-row" id="expenseLedgerRow">';
+    ledgerOptions.forEach(function (t) {
+      var active = t.id === currentExpenseTargetId;
+      html += '<button class="chip press' + (active ? ' active' : '') + '" data-action="pick-expense-ledger" data-ledger-id="' + t.id + '">' + escapeHtml(t.name) + '</button>';
+    });
+    html += '</div>';
+  }
+  var amtValue = editExpense ? editExpense.amount : (template && template.amount > 0 ? template.amount : '');
+  html += '<div class="amount-input-wrap"><span class="amount-symbol" id="expenseAmountSymbol">' + symbol + '</span><input type="number" inputmode="decimal" id="expenseAmountInput" class="amount-input" placeholder="0" value="' + amtValue + '"></div>';
+  html += '<div class="form-label">分類</div><div class="category-grid" id="expenseCategoryGrid"></div>';
+  html += '<div class="form-label">付款方式</div><div class="currency-row" id="payMethodRow">';
+  PAY_METHODS.forEach(function (p) {
+    var active = p.id === currentPayMethod;
+    html += '<button class="currency-pick press' + (active ? ' active' : '') + '" data-pay="' + p.id + '" data-action="pick-pay-method">' + escapeHtml(p.label) + '</button>';
   });
   html += '</div>';
-  html += '<div class="amount-input-wrap"><span class="amount-symbol" id="expenseAmountSymbol">' + symbol + '</span><input type="number" inputmode="decimal" id="expenseAmountInput" class="amount-input" placeholder="0" value="' + (prefillTemplate && prefillTemplate.amount > 0 ? prefillTemplate.amount : '') + '"></div>';
-  html += '<div class="form-label">分類</div><div class="category-grid" id="expenseCategoryGrid"></div>';
-  html += '<div class="form-label">備註（選填）</div><input type="text" id="expenseNoteInput" class="text-input" placeholder="例如：午餐、伴手禮..." value="' + escapeHtml(prefillTemplate ? prefillTemplate.name : '') + '">';
-  html += '<div class="form-label">日期</div><input type="date" id="expenseDateInput" class="text-input" value="' + todayLocal() + '">';
-  html += '<button class="save-btn press" id="expenseSaveBtn" data-action="save-expense"' + (prefillTemplate && prefillTemplate.amount > 0 ? '' : ' disabled') + '>儲存</button>';
+  html += '<div class="form-label">備註（選填）</div><input type="text" id="expenseNoteInput" class="text-input" placeholder="例如：午餐、伴手禮..." value="' + escapeHtml(editExpense ? (editExpense.note || '') : (template ? template.name : '')) + '">';
+  html += '<div class="form-label">日期</div><input type="date" id="expenseDateInput" class="text-input" value="' + (editExpense ? editExpense.date : todayLocal()) + '">';
+  var canSaveInitially = (editExpense && editExpense.amount > 0) || (template && template.amount > 0);
+  html += '<button class="save-btn press" id="expenseSaveBtn" data-action="save-expense"' + (canSaveInitially ? '' : ' disabled') + '>' + (editExpense ? '儲存變更' : '儲存') + '</button>';
   html += '</div></div>';
   document.getElementById('modalRoot').innerHTML = html;
   modalOpen = 'expense';
@@ -633,7 +702,7 @@ function openExpenseModal(prefillTemplate) {
     var val = parseFloat(this.value);
     document.getElementById('expenseSaveBtn').disabled = !(val > 0);
   });
-  if (!(prefillTemplate && prefillTemplate.amount > 0)) amtInput.focus();
+  if (!canSaveInitially) amtInput.focus();
 }
 function refreshExpenseCategoryGrid() {
   var grid = document.getElementById('expenseCategoryGrid');
@@ -650,10 +719,20 @@ function doSaveExpense() {
   if (!amt || amt <= 0) return;
   var note = document.getElementById('expenseNoteInput').value.trim();
   var date = document.getElementById('expenseDateInput').value || todayLocal();
+  if (editingExpenseId) {
+    var eid = editingExpenseId;
+    closeModal();
+    db.collection('expenses').doc(eid).update({
+      amount: amt, category: currentExpenseCategory, note: note, date: date, payMethod: currentPayMethod,
+      editedBy: getUserName(), editedAt: Date.now()
+    }).catch(function () { saveErrorFlag = true; renderApp(); });
+    return;
+  }
   var targetId = currentExpenseTargetId || activeTripId;
   closeModal();
   db.collection('expenses').add({
-    tripId: targetId, amount: amt, category: currentExpenseCategory, note: note, date: date,
+    tripId: targetId, amount: amt, category: currentExpenseCategory, note: note, date: date, payMethod: currentPayMethod,
+    fromTemplate: currentTemplateId || null,
     createdAt: Date.now(), addedBy: getUserName()
   }).catch(function () { saveErrorFlag = true; renderApp(); });
 }
@@ -843,13 +922,14 @@ function doSaveUsername() {
 }
 
 /* ---------- search modal ---------- */
-function openSearchModal() {
-  searchState = { query: '', preset: 'all', dateFrom: '', dateTo: '', scope: 'current', categories: {} };
+function openSearchModal(lockTripId) {
+  searchState = { query: '', preset: 'all', dateFrom: '', dateTo: '', scope: 'current', categories: {}, payMethods: {} };
   var activeTrip = getActiveTrip();
+  var locked = !!lockTripId;
   var multiTrip = appData.trips.length > 1;
 
   var html = '<div class="modal-overlay"><div class="modal-sheet" style="max-height:92vh;">';
-  html += '<div class="modal-header"><span class="modal-title">搜尋支出</span><button class="modal-close" data-action="close-modal">' + icon('x', 20, '#9AA0A6') + '</button></div>';
+  html += '<div class="modal-header"><span class="modal-title">' + (locked ? ('搜尋「' + escapeHtml(activeTrip.name) + '」') : '搜尋支出') + '</span><button class="modal-close" data-action="close-modal">' + icon('x', 20, '#9AA0A6') + '</button></div>';
   html += '<div class="search-input-wrap">' + icon('search', 18, '#6B7076') + '<input type="text" id="searchQueryInput" class="search-input" placeholder="搜尋備註或分類..."></div>';
   html += '<div class="form-label">時間範圍</div><div class="preset-row" id="presetRow">';
   [['all', '全部時間'], ['today', '今天'], ['week', '本週'], ['month', '本月'], ['custom', '自訂']].forEach(function (p) {
@@ -859,7 +939,7 @@ function openSearchModal() {
   html += '<div id="customDateRow" class="hidden" style="display:flex;gap:10px;margin-bottom:18px;">';
   html += '<input type="date" id="searchDateFrom" class="text-input" style="margin-bottom:0;flex:1;min-width:0;">';
   html += '<input type="date" id="searchDateTo" class="text-input" style="margin-bottom:0;flex:1;min-width:0;"></div>';
-  if (multiTrip) {
+  if (multiTrip && !locked) {
     html += '<div class="form-label">搜尋範圍</div><div class="currency-row" id="scopeRow">';
     html += '<button class="currency-pick press active" data-scope="current" data-action="pick-scope">僅「' + escapeHtml(activeTrip.name) + '」</button>';
     html += '<button class="currency-pick press" data-scope="all" data-action="pick-scope">所有帳本</button></div>';
@@ -867,6 +947,11 @@ function openSearchModal() {
   html += '<div class="form-label">分類</div><div class="chip-row" id="searchChipRow">';
   CATEGORIES.forEach(function (c) {
     html += '<button class="chip press" data-cat="' + c.id + '" data-action="toggle-search-cat">' + icon(c.icon, 14, '#9AA0A6') + c.label + '</button>';
+  });
+  html += '</div>';
+  html += '<div class="form-label">付款方式</div><div class="chip-row" id="searchPayRow">';
+  PAY_METHODS.forEach(function (p) {
+    html += '<button class="chip press" data-pay="' + p.id + '" data-action="toggle-search-pay">' + icon(p.icon, 14, '#9AA0A6') + escapeHtml(p.label) + '</button>';
   });
   html += '</div>';
   html += '<div class="search-results-header"><span class="results-count" id="resultsCount">沒有符合的紀錄</span>';
@@ -906,6 +991,8 @@ function renderSearchResults() {
   var results = pool.filter(function (e) {
     var catIds = Object.keys(searchState.categories).filter(function (k) { return searchState.categories[k]; });
     if (catIds.length > 0 && !searchState.categories[e.category]) return false;
+    var payIds = Object.keys(searchState.payMethods).filter(function (k) { return searchState.payMethods[k]; });
+    if (payIds.length > 0 && !searchState.payMethods[e.payMethod || 'cash']) return false;
     if (searchState.dateFrom && e.date < searchState.dateFrom) return false;
     if (searchState.dateTo && e.date > searchState.dateTo) return false;
     if (q) {
@@ -1002,6 +1089,8 @@ function showToast(kind) {
 function closeModal() {
   document.getElementById('modalRoot').innerHTML = '';
   modalOpen = null;
+  editingExpenseId = null;
+  currentTemplateId = null;
 }
 
 /* ---------- global click delegation ---------- */
@@ -1020,7 +1109,13 @@ function handleGlobalClick(ev) {
   } else if (action === 'quick-bill') {
     var tid0 = el.getAttribute('data-template-id');
     var tmpl = templatesCache.filter(function (t) { return t.id === tid0; })[0];
-    if (tmpl) openExpenseModal(tmpl);
+    if (tmpl) openExpenseModal({ template: tmpl });
+  } else if (action === 'edit-expense') {
+    var eid2 = el.getAttribute('data-expense-id');
+    var exp = appData.expenses.filter(function (x) { return x.id === eid2; })[0];
+    if (exp) openExpenseModal({ editExpense: exp });
+  } else if (action === 'search-this-trip') {
+    openSearchModal(activeTripId);
   } else if (action === 'open-search') {
     openSearchModal();
   } else if (action === 'open-add-trip') {
@@ -1071,6 +1166,11 @@ function handleGlobalClick(ev) {
   } else if (action === 'pick-expense-category') {
     currentExpenseCategory = el.getAttribute('data-cat');
     refreshExpenseCategoryGrid();
+  } else if (action === 'pick-pay-method') {
+    currentPayMethod = el.getAttribute('data-pay');
+    document.querySelectorAll('#payMethodRow .currency-pick').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-pay') === currentPayMethod);
+    });
   } else if (action === 'save-expense') {
     doSaveExpense();
   } else if (action === 'pick-trip-currency') {
@@ -1107,8 +1207,13 @@ function handleGlobalClick(ev) {
     searchState.categories[cid] = !searchState.categories[cid];
     el.classList.toggle('active', !!searchState.categories[cid]);
     renderSearchResults();
+  } else if (action === 'toggle-search-pay') {
+    var pid = el.getAttribute('data-pay');
+    searchState.payMethods[pid] = !searchState.payMethods[pid];
+    el.classList.toggle('active', !!searchState.payMethods[pid]);
+    renderSearchResults();
   } else if (action === 'clear-search-filters') {
-    searchState = { query: '', preset: 'all', dateFrom: '', dateTo: '', scope: 'current', categories: {} };
+    searchState = { query: '', preset: 'all', dateFrom: '', dateTo: '', scope: 'current', categories: {}, payMethods: {} };
     document.getElementById('searchQueryInput').value = '';
     document.getElementById('searchDateFrom').value = '';
     document.getElementById('searchDateTo').value = '';
@@ -1117,6 +1222,7 @@ function handleGlobalClick(ev) {
     var scopeRow = document.getElementById('scopeRow');
     if (scopeRow) scopeRow.querySelectorAll('.currency-pick').forEach(function (btn, i) { btn.classList.toggle('active', i === 0); });
     document.querySelectorAll('#searchChipRow .chip').forEach(function (btn) { btn.classList.remove('active'); });
+    document.querySelectorAll('#searchPayRow .chip').forEach(function (btn) { btn.classList.remove('active'); });
     renderSearchResults();
   }
 }
@@ -1144,5 +1250,3 @@ if (document.readyState === 'loading') {
 </script>
 </body>
 </html>
-
-
