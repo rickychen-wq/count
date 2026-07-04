@@ -46,17 +46,27 @@
 
   .error-banner { display: flex; align-items: center; gap: 8px; background: #2A1416; border: 1px solid #4A2226; border-radius: 10px; padding: 10px 12px; font-size: 14px; color: #E5989D; margin-bottom: 14px; }
 
-  .tabs-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 24px; }
+  .tabs-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 20px; }
   .tabs-row::-webkit-scrollbar, .trend-scroll::-webkit-scrollbar { height: 4px; }
   .tabs-row::-webkit-scrollbar-thumb, .trend-scroll::-webkit-scrollbar-thumb { background: #2A2E33; border-radius: 2px; }
   .trip-tag { position: relative; display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 12px 18px 12px 24px; border-radius: 10px; border: 1px solid #2A2E33; background: #14171C; cursor: pointer; color: #F5F1E8; transition: transform .12s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease; }
   .trip-tag:active { transform: scale(0.96); }
   .trip-tag.active { border-color: #D4AF37; background: #1C1710; box-shadow: 0 0 0 3px rgba(212,175,55,0.08); }
+  .trip-tag.daily-tag { padding-left: 16px; }
   .trip-tag-hole { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; border-radius: 50%; background: #0B0D10; border: 1px solid #3A3F45; }
   .trip-tag-name { font-size: 15px; font-weight: 600; white-space: nowrap; }
   .trip-tag-currency { font-size: 12px; font-family: ui-monospace,"SF Mono",Menlo,monospace; color: #9AA0A6; background: #0B0D10; padding: 2px 6px; border-radius: 5px; }
-  .add-trip-btn { flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px; border: 1px dashed #3A3F45; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .12s ease; }
+  .add-trip-btn { flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px; border: 1px dashed #3A3F45; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .12s ease; font-size: 13px; font-weight: 700; color: #9AA0A6; gap: 4px; }
   .add-trip-btn:active { transform: scale(0.96); }
+
+  .month-switch { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 20px; }
+  .month-switch-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #2A2E33; background: #14171C; color: #D4AF37; font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .month-switch-btn:active { transform: scale(0.94); }
+  .month-switch-label { font-size: 16px; font-weight: 700; font-family: ui-monospace,"SF Mono",Menlo,monospace; min-width: 96px; text-align: center; color: #F5F1E8; }
+
+  .bill-reminder { background: #1C1710; border: 1px solid #3A2F12; border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+  .bill-reminder-text { font-size: 14px; color: #D4AF37; font-weight: 600; margin-bottom: 10px; }
+  .bill-reminder-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 
   .summary-card { position: relative; overflow: hidden; background: #14171C; border: 1px solid #22262B; border-radius: 16px; padding: 26px 22px; margin-bottom: 22px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); animation: fadeIn .25s ease-out; }
   .summary-glow { position: absolute; top: -50px; right: -50px; width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle, rgba(212,175,55,0.35), transparent 70%); filter: blur(18px); pointer-events: none; }
@@ -67,6 +77,7 @@
   .summary-convert { font-size: 13px; color: #6B7076; margin-top: 6px; font-family: ui-monospace,"SF Mono",Menlo,monospace; }
   .summary-sub { font-size: 14px; color: #6B7076; margin-top: 12px; }
   .summary-actions { display: flex; gap: 8px; position: relative; flex-shrink: 0; }
+  .archived-badge { display: inline-block; font-size: 11px; font-weight: 700; color: #9AA0A6; background: #0B0D10; border: 1px solid #2A2E33; padding: 3px 8px; border-radius: 999px; margin-bottom: 10px; }
 
   .budget-block { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #2A2E33; }
   .budget-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
@@ -140,14 +151,17 @@
 
   .search-input-wrap { display: flex; align-items: center; gap: 10px; background: #0B0D10; border: 1px solid #2A2E33; border-radius: 12px; padding: 12px 14px; margin-bottom: 20px; }
   .search-input { flex: 1; min-width: 0; font-size: 16px; color: #F5F1E8; background: transparent; border: none; outline: none; }
-  .preset-row, .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
-  .preset-btn, .chip { padding: 8px 14px; border-radius: 999px; border: 1px solid #2A2E33; background: #181B1F; font-size: 13px; font-weight: 600; cursor: pointer; color: #9AA0A6; transition: border-color .15s ease, background-color .15s ease, color .15s ease; }
+  .preset-row, .chip-row, .ledger-chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .ledger-chip-row { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .preset-btn, .chip { padding: 8px 14px; border-radius: 999px; border: 1px solid #2A2E33; background: #181B1F; font-size: 13px; font-weight: 600; cursor: pointer; color: #9AA0A6; transition: border-color .15s ease, background-color .15s ease, color .15s ease; flex-shrink: 0; }
   .chip { display: flex; align-items: center; gap: 6px; }
   .preset-btn.active, .chip.active { border-color: #D4AF37; background: rgba(212,175,55,0.13); color: #F5F1E8; }
 
   .search-results-header { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid #22262B; margin-bottom: 10px; }
   .results-count { font-size: 14px; color: #9AA0A6; }
   .clear-filters-btn { border: none; background: transparent; color: #D4AF37; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+  .template-row { display: flex; align-items: center; gap: 10px; background: #0B0D10; border: 1px solid #2A2E33; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
 
   .toast { position: fixed; top: calc(16px + env(safe-area-inset-top,0px)); left: 50%; transform: translateX(-50%); background: #1C1710; border: 1px solid #D4AF37; color: #F5F1E8; padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; z-index: 200; box-shadow: 0 4px 16px rgba(0,0,0,0.4); animation: fadeIn .2s ease-out; }
 
@@ -169,12 +183,6 @@
 <script>
 'use strict';
 
-/* =====================================================================
-   把下面這個 firebaseConfig 換成你自己 Firebase 專案的設定。
-   拿法：console.firebase.google.com → 建立專案 → 左上角齒輪 → 專案設定
-   → 往下滑「你的應用程式」→ 新增網頁應用程式 → 會給你一段長這樣的物件，
-   整個貼過來蓋掉下面這幾行就好。
-   ===================================================================== */
 var firebaseConfig = {
   apiKey: "AIzaSyBcESksWECsl_451PT6BYdXnd4EjnPrcog",
   authDomain: "cost-e8cde.firebaseapp.com",
@@ -185,6 +193,7 @@ var firebaseConfig = {
 };
 
 var USERNAME_KEY = 'travel-ledger-username';
+var DAILY_ID = 'daily-ledger';
 
 var CATEGORIES = [
   { id: 'food', label: '飲食', icon: 'utensils', color: '#D4AF37' },
@@ -192,6 +201,7 @@ var CATEGORIES = [
   { id: 'stay', label: '住宿', icon: 'bed', color: '#9B7EDE' },
   { id: 'shopping', label: '購物', icon: 'bag', color: '#E08585' },
   { id: 'fun', label: '娛樂', icon: 'ticket', color: '#6FCF97' },
+  { id: 'bill', label: '帳單', icon: 'card', color: '#5B8DEF' },
   { id: 'other', label: '其他', icon: 'more', color: '#8A8F98' }
 ];
 
@@ -210,7 +220,7 @@ try {
   if (typeof firebase !== 'undefined' && firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('YOUR_') !== 0) {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    try { db.enablePersistence({ synchronizeTabs: true }); } catch (e2) {}
+    db.enablePersistence({ synchronizeTabs: true }).catch(function () {});
     firebaseReady = true;
   }
 } catch (e) {
@@ -230,12 +240,14 @@ function icon(name, size, color) {
     bed: '<path d="M2 18v-6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6"/><path d="M2 18v2M22 18v2"/><path d="M2 13V9a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v3"/><path d="M13 13V9a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v3"/>',
     bag: '<path d="M6 8h12l1 12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
     ticket: '<path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8z"/><line x1="10" y1="6" x2="10" y2="18" stroke-dasharray="2 2"/>',
+    card: '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>',
     more: '<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/>',
     alert: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16.01"/>',
     search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
     edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>',
-    copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
+    copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    restore: '<path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 8 8 8"/>'
   };
   var fillIcons = { more: true };
   var isFill = !!fillIcons[name];
@@ -258,7 +270,7 @@ function todayLocal() {
 }
 function findCategory(id) {
   for (var i = 0; i < CATEGORIES.length; i++) { if (CATEGORIES[i].id === id) return CATEGORIES[i]; }
-  return CATEGORIES[5];
+  return CATEGORIES[CATEGORIES.length - 1];
 }
 function findCurrency(code) {
   for (var i = 0; i < CURRENCIES.length; i++) { if (CURRENCIES[i].code === code) return CURRENCIES[i]; }
@@ -305,6 +317,14 @@ function getRangeForPreset(preset) {
   }
   return { from: '', to: '' };
 }
+/* Manual month arithmetic on 'YYYY-MM' strings — avoids new Date('YYYY-MM') which Safari parses inconsistently */
+function shiftMonth(monthStr, delta) {
+  var parts = monthStr.split('-').map(Number);
+  var y = parts[0], m = parts[1] + delta;
+  while (m > 12) { m -= 12; y += 1; }
+  while (m < 1) { m += 12; y -= 1; }
+  return y + '-' + String(m).padStart(2, '0');
+}
 function getUserName() {
   try { return localStorage.getItem(USERNAME_KEY) || ''; } catch (e) { return ''; }
 }
@@ -315,61 +335,85 @@ function setUserNameStored(name) {
 /* ---------- global state ---------- */
 var appData = null;
 var activeTripId = null;
+var currentMonth = todayLocal().slice(0, 7);
 var confirmDeleteExpenseId = null;
 var confirmDeleteTripFlag = false;
 var saveErrorFlag = false;
 var modalOpen = null;
 var nameGateActive = false;
 var currentExpenseCategory = 'food';
+var currentExpenseTargetId = null;
 var editingTripId = null;
 var currentNewTripCurrency = 'TWD';
 var searchState = { query: '', preset: 'all', dateFrom: '', dateTo: '', scope: 'current', categories: {} };
+var templatesCache = [];
 var unsubTrips = null;
 var unsubExpenses = null;
+var unsubTemplates = null;
 
 function getActiveTrip() {
   if (!appData) return null;
-  for (var i = 0; i < appData.trips.length; i++) { if (appData.trips[i].id === activeTripId) return appData.trips[i]; }
-  return appData.trips[0];
+  var found = appData.trips.filter(function (t) { return t.id === activeTripId; })[0];
+  if (found) return found;
+  var daily = appData.trips.filter(function (t) { return t.id === DAILY_ID; })[0];
+  return daily || appData.trips[0] || null;
 }
 
 /* ---------- Firestore sync ---------- */
+function ensureDailyLedger() {
+  db.collection('trips').doc(DAILY_ID).get().then(function (snap) {
+    if (!snap.exists) {
+      db.collection('trips').doc(DAILY_ID).set({
+        type: 'daily', name: '日常支出', currency: 'TWD', archived: false, monthlyBudget: 0, createdAt: Date.now()
+      });
+    }
+  });
+}
 function startSync() {
   if (!firebaseReady) {
     var root = document.getElementById('app');
     root.innerHTML = '<div class="loading-wrap">' + icon('alert', 32, '#E5484D') +
       '<div style="margin-top:14px;color:#F5F1E8;font-size:16px;font-weight:700;">還沒接上 Firebase</div>' +
-      '<div style="margin-top:8px;color:#9AA0A6;font-size:14px;max-width:280px;">請把檔案最上面的 firebaseConfig 換成你自己 Firebase 專案的設定</div></div>';
+      '<div style="margin-top:8px;color:#9AA0A6;font-size:14px;max-width:280px;">請把檔案裡的 firebaseConfig 換成你自己 Firebase 專案的設定</div></div>';
     document.getElementById('fab').classList.add('hidden');
     return;
   }
   appData = { trips: [], expenses: [] };
-  var tripsLoaded = false, bootstrapped = false;
+  ensureDailyLedger();
 
   unsubTrips = db.collection('trips').orderBy('createdAt').onSnapshot(function (snap) {
     appData.trips = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
-    tripsLoaded = true;
     if (!activeTripId || !appData.trips.some(function (t) { return t.id === activeTripId; })) {
-      activeTripId = appData.trips.length ? appData.trips[0].id : null;
+      var daily = appData.trips.filter(function (t) { return t.id === DAILY_ID; })[0];
+      activeTripId = daily ? daily.id : (appData.trips[0] ? appData.trips[0].id : null);
     }
     saveErrorFlag = false;
     renderApp();
-    if (tripsLoaded && !bootstrapped && appData.trips.length === 0) {
-      bootstrapped = true;
-      db.collection('trips').add({ name: '宜蘭兩日遊', currency: 'TWD', budget: 0, exchangeRate: 0, createdAt: Date.now() });
-    }
   }, function () { saveErrorFlag = true; renderApp(); });
 
   unsubExpenses = db.collection('expenses').onSnapshot(function (snap) {
     appData.expenses = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
     renderApp();
   }, function () { saveErrorFlag = true; renderApp(); });
+
+  unsubTemplates = db.collection('recurringTemplates').orderBy('createdAt').onSnapshot(function (snap) {
+    templatesCache = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+    renderApp();
+    if (modalOpen === 'trip' && editingTripId === DAILY_ID) {
+      var box = document.getElementById('templateListBox');
+      if (box) box.innerHTML = renderTemplateList();
+    }
+  }, function () {});
 }
 
 /* ---------- main render ---------- */
 function renderApp() {
   var root = document.getElementById('app');
   var fab = document.getElementById('fab');
+  var savedScrollY = window.scrollY;
+  var oldTabsRow = root.querySelector('.tabs-row');
+  var savedTabsScroll = oldTabsRow ? oldTabsRow.scrollLeft : 0;
+
   if (!appData || !appData.trips.length) {
     root.innerHTML = '<div class="loading-wrap">' + icon('wallet', 32, '#D4AF37') + '<div style="margin-top:12px;color:#9AA0A6;font-size:16px;">載入中...</div></div>';
     fab.classList.add('hidden');
@@ -377,17 +421,21 @@ function renderApp() {
   }
   var activeTrip = getActiveTrip();
   activeTripId = activeTrip.id;
-  fab.classList.remove('hidden');
+  var isDaily = activeTrip.id === DAILY_ID;
+  var isArchived = !!activeTrip.archived;
+
+  fab.classList.toggle('hidden', isArchived);
   fab.innerHTML = icon('plus', 26, '#0B0D10');
 
-  var tripExpenses = appData.expenses.filter(function (e) { return e.tripId === activeTrip.id; });
+  var allTripExpenses = appData.expenses.filter(function (e) { return e.tripId === activeTrip.id; });
+  var tripExpenses = isDaily ? allTripExpenses.filter(function (e) { return e.date.slice(0, 7) === currentMonth; }) : allTripExpenses;
   var total = tripExpenses.reduce(function (s, e) { return s + Number(e.amount); }, 0);
-  var budget = activeTrip.budget || 0;
+  var budget = isDaily ? (activeTrip.monthlyBudget || 0) : (activeTrip.budget || 0);
   var hasBudget = budget > 0;
   var budgetPct = hasBudget ? Math.round((total / budget) * 100) : 0;
   var budgetColor = budgetPct >= 100 ? '#E5484D' : budgetPct >= 80 ? '#D4AF37' : '#6FCF97';
   var exchangeRate = activeTrip.exchangeRate || 0;
-  var showConversion = activeTrip.currency !== 'TWD' && exchangeRate > 0;
+  var showConversion = !isDaily && activeTrip.currency !== 'TWD' && exchangeRate > 0;
 
   var categoryTotals = CATEGORIES.map(function (c) {
     var t = tripExpenses.filter(function (e) { return e.category === c.id; }).reduce(function (s, e) { return s + Number(e.amount); }, 0);
@@ -398,6 +446,10 @@ function renderApp() {
   var groupsMap = grouped.map, dateKeys = grouped.keys;
   var trendDates = dateKeys.slice().reverse();
   var trendMax = Math.max.apply(null, [1].concat(trendDates.map(function (d) { return groupsMap[d].reduce(function (s, e) { return s + Number(e.amount); }, 0); })));
+
+  var dailyLedger = appData.trips.filter(function (t) { return t.id === DAILY_ID; })[0];
+  var activeTrips = appData.trips.filter(function (t) { return t.id !== DAILY_ID && !t.archived; });
+  var archivedTrips = appData.trips.filter(function (t) { return t.archived; });
 
   var html = '';
   html += '<div class="header"><div class="header-left"><div class="logo-box">' + icon('wallet', 20, '#0B0D10') + '</div><span class="header-title">旅費帳</span></div>';
@@ -411,36 +463,75 @@ function renderApp() {
   }
 
   html += '<div class="tabs-row">';
-  appData.trips.forEach(function (t) {
+  if (dailyLedger) {
+    html += '<button class="trip-tag daily-tag' + (dailyLedger.id === activeTrip.id ? ' active' : '') + '" data-action="select-trip" data-trip-id="' + dailyLedger.id + '">';
+    html += icon('wallet', 14, dailyLedger.id === activeTrip.id ? '#D4AF37' : '#9AA0A6') + '<span class="trip-tag-name">' + escapeHtml(dailyLedger.name) + '</span></button>';
+  }
+  activeTrips.forEach(function (t) {
     html += '<button class="trip-tag' + (t.id === activeTrip.id ? ' active' : '') + '" data-action="select-trip" data-trip-id="' + t.id + '">';
     html += '<span class="trip-tag-hole"></span><span class="trip-tag-name">' + escapeHtml(t.name) + '</span><span class="trip-tag-currency">' + t.currency + '</span></button>';
   });
-  html += '<button class="add-trip-btn" data-action="open-add-trip">' + icon('plus', 18, '#D4AF37') + '</button></div>';
+  html += '<button class="add-trip-btn" data-action="open-add-trip" aria-label="新增行程">' + icon('plus', 18, '#D4AF37') + '</button>';
+  if (archivedTrips.length > 0) {
+    html += '<button class="add-trip-btn" data-action="open-archive-sheet" style="width:auto;padding:0 14px;border-style:solid;" aria-label="已封存">📦 ' + archivedTrips.length + '</button>';
+  }
+  html += '</div>';
 
-  html += '<div class="summary-card"><div class="summary-glow"></div><div class="summary-top"><div style="flex:1;min-width:0;">';
+  if (isDaily) {
+    html += '<div class="month-switch">';
+    html += '<button class="month-switch-btn press" data-action="shift-month" data-delta="-1" aria-label="上個月">‹</button>';
+    html += '<span class="month-switch-label">' + currentMonth.replace('-', '/') + '</span>';
+    html += '<button class="month-switch-btn press" data-action="shift-month" data-delta="1" aria-label="下個月">›</button>';
+    html += '</div>';
+
+    if (currentMonth === todayLocal().slice(0, 7) && templatesCache.length > 0) {
+      var recordedNames = {};
+      allTripExpenses.filter(function (e) { return e.date.slice(0, 7) === currentMonth; }).forEach(function (e) { if (e.note) recordedNames[e.note] = true; });
+      var missing = templatesCache.filter(function (t) { return !recordedNames[t.name]; });
+      if (missing.length > 0) {
+        html += '<div class="bill-reminder"><div class="bill-reminder-text">💳 本月還有 ' + missing.length + ' 筆固定支出未記：</div><div class="bill-reminder-chips">';
+        missing.forEach(function (t) {
+          html += '<button class="chip press" data-action="quick-bill" data-template-id="' + t.id + '">' + escapeHtml(t.name) + '</button>';
+        });
+        html += '</div></div>';
+      }
+    }
+  }
+
+  html += '<div class="summary-card"><div class="summary-glow"></div>';
+  if (isArchived) html += '<span class="archived-badge">📦 已封存</span>';
+  html += '<div class="summary-top"><div style="flex:1;min-width:0;">';
   html += '<div class="summary-trip-name">' + escapeHtml(activeTrip.name) + '</div>';
-  html += '<div class="summary-eyebrow">支出總額</div>';
+  html += '<div class="summary-eyebrow">' + (isDaily ? '本月支出' : '支出總額') + '</div>';
   html += '<div class="summary-total">' + formatMoney(total, activeTrip.currency) + '</div>';
   if (showConversion) html += '<div class="summary-convert">≈ ' + formatMoney(total * exchangeRate, 'TWD') + '</div>';
   html += '<div class="summary-sub">' + tripExpenses.length + ' 筆紀錄</div></div>';
   html += '<div class="summary-actions">';
-  html += '<button class="icon-btn-sm" data-action="open-edit-trip" data-trip-id="' + activeTrip.id + '" aria-label="編輯行程">' + icon('edit', 14, '#6B7076') + '</button>';
-  html += '<button class="icon-btn-sm" data-action="share-summary" aria-label="複製摘要">' + icon('copy', 14, '#6B7076') + '</button>';
-  html += '<button class="icon-btn-sm" data-action="ask-delete-trip" aria-label="刪除行程">' + icon('trash', 14, '#6B7076') + '</button>';
+  if (isDaily) {
+    html += '<button class="icon-btn-sm press" data-action="open-edit-trip" data-trip-id="' + activeTrip.id + '" aria-label="編輯">' + icon('edit', 14, '#6B7076') + '</button>';
+    html += '<button class="icon-btn-sm press" data-action="share-summary" aria-label="複製摘要">' + icon('copy', 14, '#6B7076') + '</button>';
+  } else if (isArchived) {
+    html += '<button class="icon-btn-sm press" data-action="share-summary" aria-label="複製摘要">' + icon('copy', 14, '#6B7076') + '</button>';
+    html += '<button class="icon-btn-sm press" data-action="restore-trip" data-trip-id="' + activeTrip.id + '" aria-label="取消封存">' + icon('restore', 14, '#6B7076') + '</button>';
+  } else {
+    html += '<button class="icon-btn-sm press" data-action="open-edit-trip" data-trip-id="' + activeTrip.id + '" aria-label="編輯行程">' + icon('edit', 14, '#6B7076') + '</button>';
+    html += '<button class="icon-btn-sm press" data-action="share-summary" aria-label="複製摘要">' + icon('copy', 14, '#6B7076') + '</button>';
+    html += '<button class="icon-btn-sm press" data-action="ask-delete-trip" aria-label="刪除行程">' + icon('trash', 14, '#6B7076') + '</button>';
+  }
   html += '</div></div>';
 
   if (hasBudget) {
-    html += '<div class="budget-block"><div class="budget-row"><span class="budget-label">預算 ' + formatMoney(budget, activeTrip.currency) + '</span>';
+    html += '<div class="budget-block"><div class="budget-row"><span class="budget-label">' + (isDaily ? '每月預算 ' : '預算 ') + formatMoney(budget, activeTrip.currency) + '</span>';
     html += '<span class="budget-pct" style="color:' + budgetColor + '">' + budgetPct + '%</span></div>';
     html += '<div class="bar-track"><div class="bar-fill" style="width:' + Math.min(budgetPct, 100) + '%;background-color:' + budgetColor + '"></div></div>';
     if (budgetPct >= 100) html += '<div class="budget-over">超出預算 ' + formatMoney(total - budget, activeTrip.currency) + '</div>';
     html += '</div>';
   }
 
-  if (confirmDeleteTripFlag) {
-    html += '<div class="confirm-row"><span class="confirm-text">' + (appData.trips.length <= 1 ? '至少要保留一個行程' : ('確定刪除「' + escapeHtml(activeTrip.name) + '」及其所有紀錄?')) + '</span><div style="display:flex;gap:8px;">';
-    if (appData.trips.length > 1) html += '<button class="btn-danger" data-action="confirm-delete-trip">刪除</button>';
-    html += '<button class="btn-cancel" data-action="cancel-delete-trip">取消</button></div></div>';
+  if (confirmDeleteTripFlag && !isDaily && !isArchived) {
+    html += '<div class="confirm-row"><span class="confirm-text">確定刪除「' + escapeHtml(activeTrip.name) + '」及其所有紀錄?</span><div style="display:flex;gap:8px;">';
+    html += '<button class="btn-danger press" data-action="confirm-delete-trip">刪除</button>';
+    html += '<button class="btn-cancel press" data-action="cancel-delete-trip">取消</button></div></div>';
   }
   html += '</div>'; // end summary-card
 
@@ -469,7 +560,7 @@ function renderApp() {
 
   html += '<div><div class="card-title">支出紀錄</div>';
   if (dateKeys.length === 0) {
-    html += '<div class="empty-state">' + icon('calendar', 28, '#4A4F55') + '<div class="empty-text">還沒有支出紀錄</div><div class="empty-sub">點右下角「＋」開始記帳</div></div>';
+    html += '<div class="empty-state">' + icon('calendar', 28, '#4A4F55') + '<div class="empty-text">還沒有支出紀錄</div>' + (isArchived ? '' : '<div class="empty-sub">點右下角「＋」開始記帳</div>') + '</div>';
   } else {
     dateKeys.forEach(function (dateKey) {
       var dayExpenses = groupsMap[dateKey];
@@ -482,6 +573,9 @@ function renderApp() {
   html += '</div>';
 
   root.innerHTML = html;
+  window.scrollTo(0, savedScrollY);
+  var newTabsRow = root.querySelector('.tabs-row');
+  if (newTabsRow) newTabsRow.scrollLeft = savedTabsScroll;
 }
 
 function renderExpenseRow(e, currency, opts) {
@@ -489,8 +583,8 @@ function renderExpenseRow(e, currency, opts) {
   var cat = findCategory(e.category);
   if (confirmDeleteExpenseId === e.id) {
     return '<div class="expense-row"><div class="row-confirm-wrap"><span class="confirm-text">刪除這筆紀錄?</span><div style="display:flex;gap:8px;">' +
-      '<button class="btn-danger" data-action="confirm-delete-expense" data-expense-id="' + e.id + '">刪除</button>' +
-      '<button class="btn-cancel" data-action="cancel-delete-expense">取消</button></div></div></div>';
+      '<button class="btn-danger press" data-action="confirm-delete-expense" data-expense-id="' + e.id + '">刪除</button>' +
+      '<button class="btn-cancel press" data-action="cancel-delete-expense">取消</button></div></div></div>';
   }
   var subParts = [];
   if (opts.tripName) subParts.push(escapeHtml(opts.tripName));
@@ -501,22 +595,35 @@ function renderExpenseRow(e, currency, opts) {
   html += '<div style="flex:1;min-width:0;"><div class="expense-note">' + escapeHtml(e.note || cat.label) + '</div>';
   if (subText) html += '<div class="expense-cat-label">' + subText + '</div>';
   html += '</div><div class="expense-amount">' + formatMoney(e.amount, currency) + '</div>';
-  html += '<button class="row-delete-btn" data-action="ask-delete-expense" data-expense-id="' + e.id + '" aria-label="刪除">' + icon('trash', 15, '#6B7076') + '</button></div>';
+  html += '<button class="row-delete-btn press" data-action="ask-delete-expense" data-expense-id="' + e.id + '" aria-label="刪除">' + icon('trash', 15, '#6B7076') + '</button></div>';
   return html;
 }
 
 /* ---------- expense modal ---------- */
-function openExpenseModal() {
-  currentExpenseCategory = 'food';
-  var activeTrip = getActiveTrip();
-  var symbol = findCurrency(activeTrip.currency).symbol;
+function openExpenseModal(prefillTemplate) {
+  currentExpenseCategory = prefillTemplate ? (prefillTemplate.category || 'bill') : 'food';
+  currentExpenseTargetId = prefillTemplate ? DAILY_ID : activeTripId;
+  var targetTrip = appData.trips.filter(function (t) { return t.id === currentExpenseTargetId; })[0] || getActiveTrip();
+  var symbol = findCurrency(targetTrip.currency).symbol;
+  var ledgerOptions = appData.trips.filter(function (t) { return !t.archived; }).sort(function (a, b) {
+    if (a.id === DAILY_ID) return -1;
+    if (b.id === DAILY_ID) return 1;
+    return 0;
+  });
+
   var html = '<div class="modal-overlay"><div class="modal-sheet">';
   html += '<div class="modal-header"><span class="modal-title">新增支出</span><button class="modal-close" data-action="close-modal">' + icon('x', 20, '#9AA0A6') + '</button></div>';
-  html += '<div class="amount-input-wrap"><span class="amount-symbol">' + symbol + '</span><input type="number" inputmode="decimal" id="expenseAmountInput" class="amount-input" placeholder="0"></div>';
+  html += '<div class="form-label">記到哪本</div><div class="ledger-chip-row" id="expenseLedgerRow">';
+  ledgerOptions.forEach(function (t) {
+    var active = t.id === currentExpenseTargetId;
+    html += '<button class="chip press' + (active ? ' active' : '') + '" data-action="pick-expense-ledger" data-ledger-id="' + t.id + '">' + escapeHtml(t.name) + '</button>';
+  });
+  html += '</div>';
+  html += '<div class="amount-input-wrap"><span class="amount-symbol" id="expenseAmountSymbol">' + symbol + '</span><input type="number" inputmode="decimal" id="expenseAmountInput" class="amount-input" placeholder="0" value="' + (prefillTemplate && prefillTemplate.amount > 0 ? prefillTemplate.amount : '') + '"></div>';
   html += '<div class="form-label">分類</div><div class="category-grid" id="expenseCategoryGrid"></div>';
-  html += '<div class="form-label">備註（選填）</div><input type="text" id="expenseNoteInput" class="text-input" placeholder="例如：午餐、伴手禮...">';
+  html += '<div class="form-label">備註（選填）</div><input type="text" id="expenseNoteInput" class="text-input" placeholder="例如：午餐、伴手禮..." value="' + escapeHtml(prefillTemplate ? prefillTemplate.name : '') + '">';
   html += '<div class="form-label">日期</div><input type="date" id="expenseDateInput" class="text-input" value="' + todayLocal() + '">';
-  html += '<button class="save-btn" id="expenseSaveBtn" data-action="save-expense" disabled>儲存</button>';
+  html += '<button class="save-btn press" id="expenseSaveBtn" data-action="save-expense"' + (prefillTemplate && prefillTemplate.amount > 0 ? '' : ' disabled') + '>儲存</button>';
   html += '</div></div>';
   document.getElementById('modalRoot').innerHTML = html;
   modalOpen = 'expense';
@@ -524,17 +631,16 @@ function openExpenseModal() {
   var amtInput = document.getElementById('expenseAmountInput');
   amtInput.addEventListener('input', function () {
     var val = parseFloat(this.value);
-    var btn = document.getElementById('expenseSaveBtn');
-    btn.disabled = !(val > 0);
+    document.getElementById('expenseSaveBtn').disabled = !(val > 0);
   });
-  amtInput.focus();
+  if (!(prefillTemplate && prefillTemplate.amount > 0)) amtInput.focus();
 }
 function refreshExpenseCategoryGrid() {
   var grid = document.getElementById('expenseCategoryGrid');
   if (!grid) return;
   grid.innerHTML = CATEGORIES.map(function (c) {
     var active = c.id === currentExpenseCategory;
-    return '<button class="category-pick" data-cat="' + c.id + '" data-action="pick-expense-category" style="border-color:' + (active ? c.color : '#2A2E33') + ';background-color:' + (active ? c.color + '1A' : '#181B1F') + '">' +
+    return '<button class="category-pick press" data-cat="' + c.id + '" data-action="pick-expense-category" style="border-color:' + (active ? c.color : '#2A2E33') + ';background-color:' + (active ? c.color + '1A' : '#181B1F') + '">' +
       icon(c.icon, 20, active ? c.color : '#9AA0A6') +
       '<span class="category-pick-label" style="color:' + (active ? '#F5F1E8' : '#9AA0A6') + '">' + c.label + '</span></button>';
   }).join('');
@@ -544,20 +650,52 @@ function doSaveExpense() {
   if (!amt || amt <= 0) return;
   var note = document.getElementById('expenseNoteInput').value.trim();
   var date = document.getElementById('expenseDateInput').value || todayLocal();
-  var activeTrip = getActiveTrip();
+  var targetId = currentExpenseTargetId || activeTripId;
   closeModal();
   db.collection('expenses').add({
-    tripId: activeTrip.id, amount: amt, category: currentExpenseCategory, note: note, date: date,
+    tripId: targetId, amount: amt, category: currentExpenseCategory, note: note, date: date,
     createdAt: Date.now(), addedBy: getUserName()
   }).catch(function () { saveErrorFlag = true; renderApp(); });
 }
 
-/* ---------- trip modal (add / edit) ---------- */
+/* ---------- trip / daily ledger modal ---------- */
 function exchangeLabelText(code) { return '匯率（選填，1 ' + findCurrency(code).symbol + ' ≈ 多少台幣）'; }
+
+function renderTemplateList() {
+  if (templatesCache.length === 0) return '<div style="font-size:13px;color:#6B7076;margin-bottom:18px;">還沒有固定支出範本</div>';
+  return templatesCache.map(function (t) {
+    return '<div class="template-row"><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;">' + escapeHtml(t.name) + '</div>' +
+      '<div style="font-size:12px;color:#6B7076;">' + (t.amount > 0 ? formatMoney(t.amount, 'TWD') + ' · ' : '') + '每月 ' + (t.dayOfMonth || '-') + ' 號</div></div>' +
+      '<button class="row-delete-btn press" data-action="delete-template" data-template-id="' + t.id + '" aria-label="刪除範本">' + icon('trash', 14, '#6B7076') + '</button></div>';
+  }).join('');
+}
 
 function openTripModal(tripId) {
   editingTripId = tripId || null;
   var trip = tripId ? appData.trips.filter(function (t) { return t.id === tripId; })[0] : null;
+
+  if (trip && trip.id === DAILY_ID) {
+    var dhtml = '<div class="modal-overlay"><div class="modal-sheet">';
+    dhtml += '<div class="modal-header"><span class="modal-title">編輯日常帳本</span><button class="modal-close" data-action="close-modal">' + icon('x', 20, '#9AA0A6') + '</button></div>';
+    dhtml += '<div class="form-label">名稱</div><input type="text" id="tripNameInput" class="text-input" value="' + escapeHtml(trip.name) + '">';
+    dhtml += '<div class="form-label">每月預算（選填）</div><input type="number" inputmode="decimal" id="tripMonthlyBudgetInput" class="text-input" placeholder="例如 15000" value="' + (trip.monthlyBudget || '') + '">';
+    dhtml += '<div class="form-label">固定支出範本</div><div id="templateListBox">' + renderTemplateList() + '</div>';
+    dhtml += '<div style="display:flex;gap:8px;">';
+    dhtml += '<input type="text" id="newTemplateName" class="text-input" placeholder="名稱，如：房租" style="margin-bottom:0;flex:2;">';
+    dhtml += '<input type="number" id="newTemplateAmount" class="text-input" placeholder="金額(選填)" style="margin-bottom:0;flex:1;">';
+    dhtml += '</div>';
+    dhtml += '<div style="display:flex;gap:8px;margin-top:10px;margin-bottom:22px;">';
+    dhtml += '<input type="number" id="newTemplateDay" class="text-input" placeholder="每月幾號(選填)" min="1" max="31" style="margin-bottom:0;flex:1;">';
+    dhtml += '<button class="btn-cancel press" data-action="add-template" style="flex-shrink:0;">新增範本</button>';
+    dhtml += '</div>';
+    dhtml += '<button class="save-btn press" data-action="save-trip">儲存變更</button>';
+    dhtml += '</div></div>';
+    document.getElementById('modalRoot').innerHTML = dhtml;
+    modalOpen = 'trip';
+    document.getElementById('tripNameInput').focus();
+    return;
+  }
+
   currentNewTripCurrency = trip ? trip.currency : 'TWD';
   var nameVal = trip ? trip.name : '';
   var budgetVal = trip && trip.budget ? trip.budget : '';
@@ -568,7 +706,7 @@ function openTripModal(tripId) {
     currencyBlock = '<div class="currency-readonly">' + findCurrency(currentNewTripCurrency).symbol + ' ' + findCurrency(currentNewTripCurrency).label + '（建立後無法更改）</div>';
   } else {
     currencyBlock = '<div class="currency-row" id="tripCurrencyRow">' + CURRENCIES.map(function (c) {
-      return '<button class="currency-pick' + (c.code === 'TWD' ? ' active' : '') + '" data-code="' + c.code + '" data-action="pick-trip-currency">' + c.symbol + ' ' + c.label + '</button>';
+      return '<button class="currency-pick press' + (c.code === 'TWD' ? ' active' : '') + '" data-code="' + c.code + '" data-action="pick-trip-currency">' + c.symbol + ' ' + c.label + '</button>';
     }).join('') + '</div>';
   }
 
@@ -580,7 +718,8 @@ function openTripModal(tripId) {
   html += '<div id="tripExchangeWrap" class="' + (currentNewTripCurrency === 'TWD' ? 'hidden' : '') + '">';
   html += '<div class="form-label" id="tripExchangeLabel">' + exchangeLabelText(currentNewTripCurrency) + '</div>';
   html += '<input type="number" step="0.0001" inputmode="decimal" id="tripExchangeInput" class="text-input" placeholder="例如 0.21" value="' + rateVal + '"></div>';
-  html += '<button class="save-btn" id="tripSaveBtn" data-action="save-trip" disabled>' + (trip ? '儲存變更' : '建立行程') + '</button>';
+  html += '<button class="save-btn press" id="tripSaveBtn" data-action="save-trip" disabled>' + (trip ? '儲存變更' : '建立行程') + '</button>';
+  if (trip) html += '<button class="btn-cancel press" data-action="archive-trip" style="width:100%;margin-top:10px;">完成旅程並封存</button>';
   html += '</div></div>';
 
   document.getElementById('modalRoot').innerHTML = html;
@@ -595,6 +734,14 @@ function openTripModal(tripId) {
   nameInput.focus();
 }
 function doSaveTrip() {
+  if (editingTripId === DAILY_ID) {
+    var dname = document.getElementById('tripNameInput').value.trim() || '日常支出';
+    var mb = parseFloat(document.getElementById('tripMonthlyBudgetInput').value) || 0;
+    closeModal();
+    db.collection('trips').doc(DAILY_ID).update({ name: dname, monthlyBudget: mb })
+      .catch(function () { saveErrorFlag = true; renderApp(); });
+    return;
+  }
   var name = document.getElementById('tripNameInput').value.trim();
   if (!name) return;
   var budget = parseFloat(document.getElementById('tripBudgetInput').value) || 0;
@@ -605,26 +752,63 @@ function doSaveTrip() {
     db.collection('trips').doc(editingTripId).update({ name: name, budget: budget, exchangeRate: rate })
       .catch(function () { saveErrorFlag = true; renderApp(); });
   } else {
-    db.collection('trips').add({ name: name, currency: currentNewTripCurrency, budget: budget, exchangeRate: rate, createdAt: Date.now() })
+    db.collection('trips').add({ type: 'trip', name: name, currency: currentNewTripCurrency, budget: budget, exchangeRate: rate, archived: false, createdAt: Date.now() })
       .then(function (ref) { activeTripId = ref.id; renderApp(); })
       .catch(function () { saveErrorFlag = true; renderApp(); });
   }
 }
+function doArchiveTrip() {
+  if (!editingTripId || editingTripId === DAILY_ID) return;
+  var tid = editingTripId;
+  closeModal();
+  db.collection('trips').doc(tid).update({ archived: true }).then(function () {
+    if (activeTripId === tid) { activeTripId = DAILY_ID; renderApp(); }
+  }).catch(function () { saveErrorFlag = true; renderApp(); });
+}
+function doRestoreTrip(tid) {
+  db.collection('trips').doc(tid).update({ archived: false }).catch(function () { saveErrorFlag = true; renderApp(); });
+}
 function doDeleteTrip() {
-  if (appData.trips.length <= 1) return;
   var activeTrip = getActiveTrip();
-  var batch = db.batch();
-  batch.delete(db.collection('trips').doc(activeTrip.id));
-  appData.expenses.filter(function (e) { return e.tripId === activeTrip.id; }).forEach(function (e) {
-    batch.delete(db.collection('expenses').doc(e.id));
+  if (!activeTrip || activeTrip.id === DAILY_ID) return;
+  var tid = activeTrip.id;
+  var expenseIds = appData.expenses.filter(function (e) { return e.tripId === tid; }).map(function (e) { return e.id; });
+  var CHUNK = 400;
+  var chunks = [];
+  for (var i = 0; i < expenseIds.length; i += CHUNK) chunks.push(expenseIds.slice(i, i + CHUNK));
+  if (chunks.length === 0) chunks.push([]);
+  var promises = chunks.map(function (ids, idx) {
+    var batch = db.batch();
+    if (idx === 0) batch.delete(db.collection('trips').doc(tid));
+    ids.forEach(function (id) { batch.delete(db.collection('expenses').doc(id)); });
+    return batch.commit();
   });
   confirmDeleteTripFlag = false;
-  batch.commit().catch(function () { saveErrorFlag = true; renderApp(); });
+  if (activeTripId === tid) activeTripId = DAILY_ID;
+  Promise.all(promises).catch(function () { saveErrorFlag = true; renderApp(); });
 }
 function doDeleteExpense(id) {
   confirmDeleteExpenseId = null;
   db.collection('expenses').doc(id).delete().catch(function () { saveErrorFlag = true; renderApp(); });
   if (modalOpen === 'search') renderSearchResults(); else renderApp();
+}
+
+/* ---------- archive sheet ---------- */
+function openArchiveSheet() {
+  var archived = appData.trips.filter(function (t) { return t.archived; });
+  var html = '<div class="modal-overlay"><div class="modal-sheet">';
+  html += '<div class="modal-header"><span class="modal-title">已封存的行程</span><button class="modal-close" data-action="close-modal">' + icon('x', 20, '#9AA0A6') + '</button></div>';
+  if (archived.length === 0) {
+    html += '<div class="empty-state">' + icon('calendar', 28, '#4A4F55') + '<div class="empty-text">還沒有封存的行程</div></div>';
+  } else {
+    archived.forEach(function (t) {
+      html += '<button class="trip-tag press" data-action="view-archived-trip" data-trip-id="' + t.id + '" style="width:100%;margin-bottom:10px;justify-content:space-between;">';
+      html += '<span class="trip-tag-name">' + escapeHtml(t.name) + '</span><span class="trip-tag-currency">' + t.currency + '</span></button>';
+    });
+  }
+  html += '</div></div>';
+  document.getElementById('modalRoot').innerHTML = html;
+  modalOpen = 'archive';
 }
 
 /* ---------- username (device identity) ---------- */
@@ -637,7 +821,7 @@ function openUsernameModal(mandatory) {
   html += '</div>';
   html += '<div class="form-label">你的名字（家人會看到是誰記的帳）</div>';
   html += '<input type="text" id="userNameInput" class="text-input" placeholder="例如：chen" value="' + escapeHtml(current) + '">';
-  html += '<button class="save-btn" id="userNameSaveBtn" data-action="save-username"' + (current ? '' : ' disabled') + '>' + (mandatory ? '開始使用' : '儲存') + '</button>';
+  html += '<button class="save-btn press" id="userNameSaveBtn" data-action="save-username"' + (current ? '' : ' disabled') + '>' + (mandatory ? '開始使用' : '儲存') + '</button>';
   html += '</div></div>';
   document.getElementById('modalRoot').innerHTML = html;
   modalOpen = 'username';
@@ -669,7 +853,7 @@ function openSearchModal() {
   html += '<div class="search-input-wrap">' + icon('search', 18, '#6B7076') + '<input type="text" id="searchQueryInput" class="search-input" placeholder="搜尋備註或分類..."></div>';
   html += '<div class="form-label">時間範圍</div><div class="preset-row" id="presetRow">';
   [['all', '全部時間'], ['today', '今天'], ['week', '本週'], ['month', '本月'], ['custom', '自訂']].forEach(function (p) {
-    html += '<button class="preset-btn' + (p[0] === 'all' ? ' active' : '') + '" data-preset="' + p[0] + '" data-action="pick-preset">' + p[1] + '</button>';
+    html += '<button class="preset-btn press' + (p[0] === 'all' ? ' active' : '') + '" data-preset="' + p[0] + '" data-action="pick-preset">' + p[1] + '</button>';
   });
   html += '</div>';
   html += '<div id="customDateRow" class="hidden" style="display:flex;gap:10px;margin-bottom:18px;">';
@@ -677,16 +861,16 @@ function openSearchModal() {
   html += '<input type="date" id="searchDateTo" class="text-input" style="margin-bottom:0;flex:1;min-width:0;"></div>';
   if (multiTrip) {
     html += '<div class="form-label">搜尋範圍</div><div class="currency-row" id="scopeRow">';
-    html += '<button class="currency-pick active" data-scope="current" data-action="pick-scope">僅「' + escapeHtml(activeTrip.name) + '」</button>';
-    html += '<button class="currency-pick" data-scope="all" data-action="pick-scope">所有行程</button></div>';
+    html += '<button class="currency-pick press active" data-scope="current" data-action="pick-scope">僅「' + escapeHtml(activeTrip.name) + '」</button>';
+    html += '<button class="currency-pick press" data-scope="all" data-action="pick-scope">所有帳本</button></div>';
   }
   html += '<div class="form-label">分類</div><div class="chip-row" id="searchChipRow">';
   CATEGORIES.forEach(function (c) {
-    html += '<button class="chip" data-cat="' + c.id + '" data-action="toggle-search-cat">' + icon(c.icon, 14, '#9AA0A6') + c.label + '</button>';
+    html += '<button class="chip press" data-cat="' + c.id + '" data-action="toggle-search-cat">' + icon(c.icon, 14, '#9AA0A6') + c.label + '</button>';
   });
   html += '</div>';
   html += '<div class="search-results-header"><span class="results-count" id="resultsCount">沒有符合的紀錄</span>';
-  html += '<button class="clear-filters-btn" data-action="clear-search-filters">清除篩選</button></div>';
+  html += '<button class="clear-filters-btn press" data-action="clear-search-filters">清除篩選</button></div>';
   html += '<div id="searchResultsBox" style="margin-top:4px;"></div>';
   html += '</div></div>';
 
@@ -763,12 +947,14 @@ function renderSearchResults() {
 /* ---------- share summary ---------- */
 function buildSummaryText() {
   var activeTrip = getActiveTrip();
-  var tripExpenses = appData.expenses.filter(function (e) { return e.tripId === activeTrip.id; });
+  var isDaily = activeTrip.id === DAILY_ID;
+  var allTripExpenses = appData.expenses.filter(function (e) { return e.tripId === activeTrip.id; });
+  var tripExpenses = isDaily ? allTripExpenses.filter(function (e) { return e.date.slice(0, 7) === currentMonth; }) : allTripExpenses;
   var total = tripExpenses.reduce(function (s, e) { return s + Number(e.amount); }, 0);
-  var budget = activeTrip.budget || 0;
+  var budget = isDaily ? (activeTrip.monthlyBudget || 0) : (activeTrip.budget || 0);
   var hasBudget = budget > 0;
   var exchangeRate = activeTrip.exchangeRate || 0;
-  var showConversion = activeTrip.currency !== 'TWD' && exchangeRate > 0;
+  var showConversion = !isDaily && activeTrip.currency !== 'TWD' && exchangeRate > 0;
   var categoryTotals = CATEGORIES.map(function (c) {
     var t = tripExpenses.filter(function (e) { return e.category === c.id; }).reduce(function (s, e) { return s + Number(e.amount); }, 0);
     return { label: c.label, total: t };
@@ -776,7 +962,7 @@ function buildSummaryText() {
   var grouped = groupExpensesByDate(tripExpenses);
 
   var lines = [];
-  lines.push(activeTrip.name + ' 支出總結');
+  lines.push(activeTrip.name + (isDaily ? ' (' + currentMonth.replace('-', '/') + ') 支出總結' : ' 支出總結'));
   lines.push('總額：' + formatMoney(total, activeTrip.currency) + (hasBudget ? '／預算 ' + formatMoney(budget, activeTrip.currency) : ''));
   if (showConversion) lines.push('約合台幣：' + formatMoney(total * exchangeRate, 'TWD'));
   if (categoryTotals.length > 0) {
@@ -828,12 +1014,29 @@ function handleGlobalClick(ev) {
     activeTripId = el.getAttribute('data-trip-id');
     confirmDeleteTripFlag = false; confirmDeleteExpenseId = null;
     renderApp();
+  } else if (action === 'shift-month') {
+    currentMonth = shiftMonth(currentMonth, parseInt(el.getAttribute('data-delta'), 10));
+    renderApp();
+  } else if (action === 'quick-bill') {
+    var tid0 = el.getAttribute('data-template-id');
+    var tmpl = templatesCache.filter(function (t) { return t.id === tid0; })[0];
+    if (tmpl) openExpenseModal(tmpl);
   } else if (action === 'open-search') {
     openSearchModal();
   } else if (action === 'open-add-trip') {
     openTripModal(null);
   } else if (action === 'open-edit-trip') {
     openTripModal(el.getAttribute('data-trip-id'));
+  } else if (action === 'open-archive-sheet') {
+    openArchiveSheet();
+  } else if (action === 'view-archived-trip') {
+    activeTripId = el.getAttribute('data-trip-id');
+    closeModal();
+    renderApp();
+  } else if (action === 'archive-trip') {
+    doArchiveTrip();
+  } else if (action === 'restore-trip') {
+    doRestoreTrip(el.getAttribute('data-trip-id'));
   } else if (action === 'ask-delete-trip') {
     confirmDeleteTripFlag = true; renderApp();
   } else if (action === 'cancel-delete-trip') {
@@ -852,6 +1055,13 @@ function handleGlobalClick(ev) {
     doDeleteExpense(el.getAttribute('data-expense-id'));
   } else if (action === 'open-add-expense') {
     openExpenseModal();
+  } else if (action === 'pick-expense-ledger') {
+    currentExpenseTargetId = el.getAttribute('data-ledger-id');
+    document.querySelectorAll('#expenseLedgerRow .chip').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-ledger-id') === currentExpenseTargetId);
+    });
+    var targetTrip = appData.trips.filter(function (t) { return t.id === currentExpenseTargetId; })[0];
+    if (targetTrip) document.getElementById('expenseAmountSymbol').textContent = findCurrency(targetTrip.currency).symbol;
   } else if (action === 'open-username') {
     openUsernameModal(false);
   } else if (action === 'save-username') {
@@ -873,6 +1083,17 @@ function handleGlobalClick(ev) {
     else { wrap.classList.remove('hidden'); document.getElementById('tripExchangeLabel').textContent = exchangeLabelText(currentNewTripCurrency); }
   } else if (action === 'save-trip') {
     doSaveTrip();
+  } else if (action === 'add-template') {
+    var tname = document.getElementById('newTemplateName').value.trim();
+    if (!tname) return;
+    var tamount = parseFloat(document.getElementById('newTemplateAmount').value) || 0;
+    var tday = parseInt(document.getElementById('newTemplateDay').value, 10) || 0;
+    db.collection('recurringTemplates').add({ name: tname, amount: tamount, category: 'bill', dayOfMonth: tday, createdAt: Date.now() });
+    document.getElementById('newTemplateName').value = '';
+    document.getElementById('newTemplateAmount').value = '';
+    document.getElementById('newTemplateDay').value = '';
+  } else if (action === 'delete-template') {
+    db.collection('recurringTemplates').doc(el.getAttribute('data-template-id')).delete();
   } else if (action === 'pick-preset') {
     applyPreset(el.getAttribute('data-preset'));
   } else if (action === 'pick-scope') {
