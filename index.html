@@ -20,6 +20,8 @@
     color: #F5F1E8;
     font-family: "PingFang TC","Noto Sans TC",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
   }
+  body::-webkit-scrollbar { width: 0; height: 0; }
+  body { scrollbar-width: none; -ms-overflow-style: none; }
   button { font-family: inherit; -webkit-appearance: none; appearance: none; }
   input { font-family: inherit; }
   input[type=number]::-webkit-outer-spin-button,
@@ -154,7 +156,7 @@
   .search-input-wrap { display: flex; align-items: center; gap: 10px; background: #0B0D10; border: 1px solid #2A2E33; border-radius: 12px; padding: 12px 14px; margin-bottom: 20px; }
   .search-input { flex: 1; min-width: 0; font-size: 16px; color: #F5F1E8; background: transparent; border: none; outline: none; }
   .preset-row, .chip-row, .ledger-chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
-  .ledger-chip-row { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .ledger-chip-row { flex-wrap: wrap; overflow-x: visible; padding-bottom: 0; }
   .preset-btn, .chip { padding: 8px 14px; border-radius: 999px; border: 1px solid #2A2E33; background: #181B1F; font-size: 13px; font-weight: 600; cursor: pointer; color: #9AA0A6; transition: border-color .15s ease, background-color .15s ease, color .15s ease; flex-shrink: 0; }
   .chip { display: flex; align-items: center; gap: 6px; }
   .preset-btn.active, .chip.active { border-color: #D4AF37; background: rgba(212,175,55,0.13); color: #F5F1E8; }
@@ -256,7 +258,8 @@ function icon(name, size, color) {
     search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
     edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>',
     copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
-    restore: '<path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 8 8 8"/>'
+    restore: '<path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 8 8 8"/>',
+    archive: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><line x1="9" y1="12" x2="15" y2="12"/>'
   };
   var fillIcons = { more: true };
   var isFill = !!fillIcons[name];
@@ -530,6 +533,7 @@ function renderApp() {
   } else {
     html += '<button class="icon-btn-sm press" data-action="open-edit-trip" data-trip-id="' + activeTrip.id + '" aria-label="編輯行程">' + icon('edit', 14, '#6B7076') + '</button>';
     html += '<button class="icon-btn-sm press" data-action="share-summary" aria-label="複製摘要">' + icon('copy', 14, '#6B7076') + '</button>';
+    html += '<button class="icon-btn-sm press" data-action="quick-archive-trip" data-trip-id="' + activeTrip.id + '" aria-label="結束旅程並封存">' + icon('archive', 14, '#6B7076') + '</button>';
     html += '<button class="icon-btn-sm press" data-action="ask-delete-trip" aria-label="刪除行程">' + icon('trash', 14, '#6B7076') + '</button>';
   }
   html += '</div></div>';
@@ -1130,6 +1134,13 @@ function handleGlobalClick(ev) {
     renderApp();
   } else if (action === 'archive-trip') {
     doArchiveTrip();
+  } else if (action === 'quick-archive-trip') {
+    var qat = el.getAttribute('data-trip-id');
+    if (qat && qat !== DAILY_ID) {
+      db.collection('trips').doc(qat).update({ archived: true }).then(function () {
+        if (activeTripId === qat) { activeTripId = DAILY_ID; renderApp(); }
+      }).catch(function () { saveErrorFlag = true; renderApp(); });
+    }
   } else if (action === 'restore-trip') {
     doRestoreTrip(el.getAttribute('data-trip-id'));
   } else if (action === 'ask-delete-trip') {
